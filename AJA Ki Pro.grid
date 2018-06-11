@@ -1,0 +1,624 @@
+<?xml version="1.0" encoding="UTF-8"?><abs contexttype="opengear" id="topLevel" scroll="horizontal" sharedsession="true">
+   <timer autostart="false" id="KiPro1.GetStatus" pattern="HH:mm:ss" rate="5000" start="00:00:00" stop="00:00:00">
+      <timertask tasktype="ogscript">KiPro_GetClips('KiPro1');
+            KiPro_GetState('KiPro1');</timertask>
+   </timer>
+   <timer autostart="false" id="KiPro1.AlertMessageTimer" pattern="HH:mm:ss" rate="15000" start="00:00:00" stop="00:00:00">
+      <timertask tasktype="ogscript">KiPro_AlertMessage('KiPro1','');</timertask>
+   </timer>
+   <meta>
+      <api>// KI PRO FUNCTIONS //
+      
+      function KiPro_GetState(KiPro)
+      {
+           var address = ogscript.getPrivateString('hosts', KiPro + '.address'); // host/IP of KiPro we are working with
+           
+           var KiProURL = '';
+           var KiProParameter = '';
+           var KiProParameterValue = '';
+           
+           var status = ''; // what we will get from the KiPro
+           var returnStatus = null; // what we return to the calling function
+
+           // first let's check the media state and modify the visible buttons/parameters
+           var mediaState = KiPro_GetMediaState(KiPro); // Data - LAN or Record - Play
+           var transportStatus = KiPro_GetTransportState(KiPro);
+           var currentClipName = KiPro_GetSelectedClip(KiPro);
+
+           if (mediaState == 'Data - LAN')
+           {
+               // hide the record functions and show the data functions
+               ogscript.reveal(KiPro + '.DataTab');
+           }
+           else // we are in Record-Play mode
+           {
+               // hide the data functions and show the record functions
+               ogscript.reveal(KiPro + '.TransportTab');
+
+               ogscript.rename('lbl' + KiPro + '.TransportStatus',transportStatus); // update the Transport Status Label
+               params.setValue(KiPro + '.CurrentClip', 0, currentClipName);
+               
+               // update and toggle buttons depending on state
+               switch(transportStatus)
+               {
+                  case "Playing Reverse":
+                     KiPro_ToggleButtons(KiPro, "Rewind");
+                     break;
+                  case "Playing Forward":
+                     KiPro_ToggleButtons(KiPro, "Play");
+                     break;
+                  case "Forward 2X":
+                     KiPro_ToggleButtons(KiPro, "Fast Forward");
+                     break;
+                  case "Paused":
+                     KiPro_ToggleButtons(KiPro, "Stop");
+                     break;
+                  case "Recording":
+                     KiPro_ToggleButtons(KiPro, "Record");
+                     break;
+                  case "Idle":
+                     KiPro_ToggleButtons(KiPro, null);
+                     break;
+                  default:
+                     KiPro_ToggleButtons(KiPro, null);
+                     break;
+               }
+           }
+
+           var selectedSlot = KiPro_GetSlot(KiPro);
+           var availableSpace = KiPro_GetAvailableSpace(KiPro);
+
+           if (selectedSlot != 'No Slot')
+           {
+                ogscript.rename('lbl' + KiPro + '.Slot', selectedSlot + '  ' + availableSpace + '%'); // update the Selected Slot to show available space
+           }
+           else
+           {
+               ogscript.rename('lbl' + KiPro + '.Slot', selectedSlot);
+           }
+      }
+
+      function KiPro_GetTransportState(KiPro)
+      {
+           var address = ogscript.getPrivateString('hosts', KiPro + '.address');
+           
+           var KiProURL = '';
+           var KiProParameter = '';
+           var KiProParameterValue = '';
+           
+           var status = ''; // what we will get from the KiPro
+           var returnStatus = null; // what we return to the calling function
+           
+           KiProURL = '/config?action=get&amp;paramid=';
+           KiProParameter = 'eParamID_TransportState';
+           status = ogscript.post('http://' + address + KiProURL + KiProParameter, null);
+
+           var parsedJSON = JSON.parse(status);
+           returnStatus = parsedJSON.value_name;
+           
+           return returnStatus;
+      }
+      
+      function KiPro_GetClips(KiPro)
+      {
+           var address = ogscript.getPrivateString('hosts', KiPro + '.address');
+           var KiProURL = '';
+           var KiProParameter = '';
+           var KiProParameterValue = '';
+           
+           var clipList = '';
+
+           // get a list of all the clips and dump them into the specified oid parameter
+           
+           KiProURL = '/clips?action=get_clips';
+           clipList = ogscript.post('http://' + address + KiProURL, null);
+           var parsedJSON = JSON.parse(clipList).clips;
+
+           var choices = [];
+
+           for (var i = 0; i &lt; parsedJSON.length; i = i + 1)
+           {
+               var presentedClipName = parsedJSON[i].clipname + " (" + parsedJSON[i].duration + ")";
+               var keyClipName = parsedJSON[i].clipname;
+               choices.push({"value":presentedClipName,"key":keyClipName});
+           }
+
+          var oid = KiPro + '.Clips';  
+          var newConstraint = params.createStringStringChoiceConstraint(choices);
+          params.replaceConstraint(oid, newConstraint); // update the clip list with the new array
+          params.setValue(oid, 0, KiPro_GetSelectedClip(KiPro)); //selects the first clip in the list
+      }
+
+      function KiPro_GetSlot(KiPro)
+      {
+           var address = ogscript.getPrivateString('hosts', KiPro + '.address');
+           var KiProURL = '/config?action=get&amp;paramid=';
+           var KiProParameter = 'eParamID_SelectedSlot';
+
+           var slotStatus = ogscript.post('http://' + address + KiProURL + KiProParameter, null);
+           var selectedSlot = JSON.parse(slotStatus).value_name;
+
+           return selectedSlot;           
+      }
+
+      function KiPro_GetMediaState(KiPro)
+      {
+           var address = ogscript.getPrivateString('hosts', KiPro + '.address');
+           var KiProURL = '';
+           var KiProParameter = '';
+           var KiProParameterValue = '';
+           
+           var status = ''; // what we will get from the KiPro
+           var mediaState = null; // what we return to the calling function
+
+           // first let's check the media state and modify the visible buttons/parameters
+
+           KiProURL = '/config?action=get&amp;paramid=';
+           KiProParameter = 'eParamID_MediaState';
+           status = ogscript.post('http://' + address + KiProURL + KiProParameter, null);
+           mediaState = JSON.parse(status).value_name;
+
+           return mediaState;
+      }
+
+      function KiPro_ChangeMediaState(KiPro)
+      {
+           // execute the change media state request
+
+           var address = ogscript.getPrivateString('hosts', KiPro + '.address');
+           var KiProURL = '/config?action=set&amp;paramid=';
+           var KiProParameter = 'eParamID_MediaState';
+           var KiProParameterValue = '';
+
+           var proceed = false;
+           var message = '';
+
+           // first we check to see what the current state is
+           var currentMediaState = KiPro_GetMediaState(KiPro);
+
+           if (currentMediaState == 'Record-Play') // change it to Data - LAN if Idle
+           {
+               KiProParameterValue = '1';
+
+                // we can only change the media state if we're Idle
+               if (KiPro_GetTransportState(KiPro) == 'Idle')
+               {
+                  proceed = true;
+                  ogscript.reveal(KiPro + '.DataTab');
+               }
+               else
+               {
+                  proceed = false;                  
+               }
+           }
+           else
+           {
+               KiProParameterValue = 0;
+               proceed = true; // after we've checked we're not downloading, etc.
+               ogscript.reveal(KiPro + '.TransportTab');
+           }
+
+           if (proceed)
+           {    
+              status = ogscript.post('http://' + address + KiProURL + KiProParameter + '&amp;value=' + KiProParameterValue, null);
+              var parsedJSON = JSON.parse(status).value_name;
+           }
+           else
+           {
+               message = 'Device in use, unable to change state.';
+               KiPro_AlertMessage(KiPro,message);
+           }
+      }
+
+      function KiPro_ChangeSlot(KiPro)
+      {
+           // execute the change slot request
+
+           var address = ogscript.getPrivateString('hosts', KiPro + '.address');
+           var KiProURL = '/config?action=set&amp;paramid=';
+           var KiProParameter = 'eParamID_ChangeSlot';
+           var KiProParameterValue = '6';
+         
+           status = ogscript.post('http://' + address + KiProURL + KiProParameter + '&amp;value=' + KiProParameterValue, null);
+           var parsedJSON = JSON.parse(status).value_name;
+
+           if (parsedJSON != 'Next')
+           {
+               //update our generic text label with the slot change status request
+               ogscript.rename('lbl' + KiPro + '.Message',parsedJSON);
+           }
+           else
+           {
+               KiPro_AlertMessage(KiPro,'Slot changed: ' + parsedJSON);
+               KiPro_GetState(KiPro);
+               KiPro_GetClips(KiPro);
+           }           
+      }
+
+      function KiPro_GetAvailableSpace(KiPro)
+      {
+           var address = ogscript.getPrivateString('hosts', KiPro + '.address');
+           var KiProURL = '/config?action=get&amp;paramid=';
+           var KiProParameter = 'eParamID_CurrentMediaAvailable';
+
+           var mediaStatus = ogscript.post('http://' + address + KiProURL + KiProParameter, null);
+           var availableSpace = JSON.parse(mediaStatus).value_name;
+
+           return availableSpace;
+      }
+
+      function KiPro_CheckClipName(KiPro, clipName) // returns a unique clip name so we don't accidentally override anything
+      {
+           var address = ogscript.getPrivateString('hosts', KiPro + '.address');
+           var KiProURL = '';
+           
+           var clipList = '';
+           var clipNameUnique = true;
+
+           // get a list of all the clips           
+           KiProURL = '/clips?action=get_clips';
+           clipList = ogscript.post('http://' + address + KiProURL, null);
+           var parsedJSON = JSON.parse(clipList).clips;
+
+           var clipNameTest = clipName + '.mov';
+
+           for (var i = 0; i &lt; parsedJSON.length; i = i + 1)
+           {
+               if (clipNameTest.trim() == parsedJSON[i].clipname.trim())
+               {
+                  clipNameUnique = false;
+               }
+           }
+
+           if (!(clipNameUnique)) // if the name isn't unique
+           {
+               var KiProDateTime = '';
+               var dtDate = new Date();
+               KiProDateTime += dtDate.getFullYear() + (dtDate.getMonth()+1) + dtDate.getDate() + dtDate.getHours() + dtDate.getMinutes() + dtDate.getSeconds();
+               clipName += KiProDateTime;    
+           }
+           
+           return clipName;
+      }
+
+      function KiPro_GetSelectedClip(KiPro)
+      {
+          var address = ogscript.getPrivateString('hosts', KiPro + '.address');
+          var KiProURL = '';
+          var KiProParameter = '';
+          
+          KiProURL = '/config?action=get&amp;paramid=';
+          KiProParameter = 'eParamID_CurrentClip';
+          status = ogscript.post('http://' + address + KiProURL + KiProParameter, null);
+           var selectedClip = JSON.parse(status).value_name;
+          
+          return selectedClip;
+      }
+
+      function KiPro_CueSelectedClip(KiPro, clipName)
+      {
+          var address = ogscript.getPrivateString('hosts', KiPro + '.address');
+          var KiProURL = '';
+          var KiProParamter = '';
+          var KiProParameterValue = '';
+          
+          if (clipName != null)
+          {
+             KiProURL = '/config?action=set&amp;paramid=';
+             KiProParameter = 'eParamID_GoToClip';
+             KiProParameterValue = clipName; // Cue to selected clip
+             status = ogscript.post('http://' + address + KiProURL + KiProParameter + '&amp;value=' + KiProParameterValue, null);
+
+             KiPro_AlertMessage(KiPro,'Clip cued: ' + clipName);
+          }
+      }
+
+      function KiPro_DeleteSelectedClip(KiPro, clipName)
+      {
+          var address = ogscript.getPrivateString('hosts', KiPro + '.address');
+          var KiProURL = '';
+          var KiProParamter = '';
+          var KiProParameterValue = '';
+          
+          if (clipName != null)
+          {
+             KiProURL = '/config?action=set&amp;paramid=';
+             KiProParameter = 'eParamID_ClipToDelete';
+             KiProParameterValue = clipName; // Cue to selected clip
+             status = ogscript.post('http://' + address + KiProURL + KiProParameter + '&amp;value=' + KiProParameterValue, null);
+
+             KiProParameter = 'eParamID_TransportDeleteClip';
+             KiProParameterValue = '';
+             status = ogscript.post('http://' + address + KiProURL + KiProParameter + '&amp;value=' + KiProParameterValue, null);
+
+             KiPro_AlertMessage(KiPro,'Clip deleted: ' + clipName);
+          }
+      }
+
+      function KiPro_ToggleButtons(KiPro, oidToggle)
+      {
+         var transportButton_Rewind = 'btn' + KiPro + '.TransportControl.Rewind';
+         var transportButton_Play = 'btn' + KiPro + '.TransportControl.Play';
+         var transportButton_FastForward = 'btn' + KiPro + '.TransportControl.FastForward';
+         var transportButton_Stop = 'btn' + KiPro + '.TransportControl.Stop';
+         var transportButton_Record = 'btn' + KiPro + '.TransportControl.Record';
+
+         ogscript.setStyle(transportButton_Rewind, 'bdr:shadow');
+         ogscript.setStyle(transportButton_Play, 'bdr:shadow');
+         ogscript.setStyle(transportButton_FastForward, 'bdr:shadow');
+         ogscript.setStyle(transportButton_Stop, 'bdr:shadow');
+         ogscript.setStyle(transportButton_Record, 'bdr:shadow');
+
+         switch(oidToggle)
+         {
+            case 'Rewind':
+               ogscript.setStyle(transportButton_Rewind, 'bdr:none');
+               break;
+            case 'Play':
+               ogscript.setStyle(transportButton_Play, 'bdr:none');
+               break;
+            case 'FastForward':
+               ogscript.setStyle(transportButton_FastForward, 'bdr:none');
+               break;
+            case 'Stop':
+               ogscript.setStyle(transportButton_Stop, 'bdr:none');
+               break;
+            case 'Record':
+               ogscript.setStyle(transportButton_Record, 'bdr:none');
+               break;
+            default:
+               break;
+         }
+      }
+
+      function KiPro_AlertMessage(KiPro,message)
+      {
+         ogscript.rename('lbl' + KiPro + '.Message',message); // update the label
+         ogscript.getTimerManager().getTimer(KiPro + '.AlertMessageTimer').startTimer(true); // reset the timer
+      }
+      
+      function KiPro_Transport(KiPro,transportMode,clipName)
+      {
+        var address = ogscript.getPrivateString('hosts', KiPro + '.address');
+        var transportState = KiPro_GetTransportState(KiPro);
+
+        var KiProURL = '';
+        var KiProParameter = '';
+        var KiProParameterValue = '0';
+        var status = '';
+        var proceed = true;
+        var message = '';
+
+        switch(transportMode)
+        {
+            case 'Rewind':
+               KiProParameterValue = '6';
+               message = 'Rewinding';
+               break;
+            case 'Play':            
+               KiProParameterValue = '1';
+               message = 'Playing';
+               break;
+            case 'FastForward':
+               KiProParameterValue = '5';
+               message = 'Fast Forwarding';
+               break;   
+            case 'Stop':
+               KiProParameterValue = '4'; // stop recording
+               message = 'Stopped';
+               break;   
+            case 'Record':
+               if (transportState == 'Idle')
+               {
+                  // check if the provided clipname is not blank, make a unique one if it is
+                  if ((clipName.trim()=='') || (clipName == null))
+                  {
+                        clipName = "recording_";
+                  }
+
+                  var newClipName = KiPro_CheckClipName(KiPro, clipName);
+                  
+                  // CLIP TAKE NUMBER (numbering after a clip name)
+                  KiProURL = '/config?action=set&amp;paramid=';
+                  KiProParameter = 'eParamID_UseCustomClipTake';
+                  KiProParameterValue = '0'; // TURN OFF
+                  status = ogscript.post('http://' + address + KiProURL + KiProParameter + '&amp;value=' + KiProParameterValue, null);
+
+                  // CUSTOM CLIP NAME
+                  KiProURL = '/config?action=set&amp;paramid=';
+                  KiProParameter = 'eParamID_UseCustomClipName';
+                  KiProParameterValue = '1'; // TURN ON custom clip name
+                  status = ogscript.post('http://' + address + KiProURL + KiProParameter + '&amp;value=' + KiProParameterValue, null);
+      
+                  KiProURL = '/config?action=set&amp;paramid=';
+                  KiProParameter = 'eParamID_CustomClipName';
+                  KiProParameterValue = newClipName.trim(); // Set the custom clip name
+                     
+                  status = ogscript.post('http://' + address + KiProURL + KiProParameter + '&amp;value=' + KiProParameterValue, null);
+                  message = 'Recording started: ' + newClipName;
+                }
+                else // tell the user the unit is in use
+                {
+                  proceed = false;
+                  message = 'Unable to Record. The unit is currently in use.';
+                }
+            
+               KiProParameterValue = '3';
+               break;
+            default:
+               break;
+        }
+
+        if (proceed)
+        {
+            KiProURL = '/config?action=set&amp;paramid=';
+            KiProParameter = 'eParamID_TransportCommand';
+            status = ogscript.post('http://' + address + KiProURL + KiProParameter + '&amp;value=' + KiProParameterValue, null);
+
+            transportState = KiPro_GetTransportState(KiPro);
+
+            KiPro_ToggleButtons(KiPro, transportMode);
+
+            KiPro_AlertMessage(KiPro,message);
+        }
+        else
+        {
+            KiPro_AlertMessage(KiPro,message);
+            KiPro_ToggleButtons(KiPro, '');
+        }
+      }
+   
+      function loadStartup()
+      {
+         // DO STUFF WHEN THE PANEL FIRST LOADS
+
+         // Get clip list of KiPro and current status
+         KiPro_GetClips('KiPro1');
+         KiPro_GetState('KiPro1');
+      }</api>
+      <params>
+         <param access="1" constrainttype="INT_CHOICE" name="KiPro1.VideoInput" oid="KiPro1.VideoInput" precision="0" type="INT32" value="0" widget="combo">
+            <constraint key="0">SDI 1</constraint>
+            <constraint key="4">SDI 2</constraint>
+            <constraint key="1">HDMI</constraint>
+            <constraint key="2">Component</constraint>
+            <constraint key="5">CVBS on Y (Composite)</constraint>
+         </param>
+         <param access="1" constrainttype="INT_CHOICE" name="KiPro1.AudioInput" oid="KiPro1.AudioInput" precision="0" type="INT32" value="0" widget="combo">
+            <constraint key="0">SDI</constraint>
+            <constraint key="2">XLR</constraint>
+            <constraint key="3">HDMI</constraint>
+            <constraint key="4">AES</constraint>
+         </param>
+         <param access="1" maxlength="0" name="IP Address" oid="KiPro1.IPAddress" type="STRING" value="192.168.11.143" widget="text"/>
+         <param access="1" constraintstrict="false" constrainttype="STRING_STRING_CHOICE" maxlength="0" name="KiPro 1 Clips" oid="KiPro1.Clips" stateless="true" type="STRING" value="2018_03_30_GoodFriday.mov" widget="default">
+            <constraint key="2018_03_30_GoodFriday.mov">2018_03_30_GoodFriday.mov (01:52:14:11)</constraint>
+         </param>
+         <param access="1" maxlength="0" name="KiPro 1 Current Clip Name" oid="KiPro1.CurrentClip" stateless="true" type="STRING" value="2018_03_30_GoodFriday.mov" widget="text"/>
+         <param access="1" maxlength="0" name="KiPro 1 New Clip Name" oid="KiPro1.NewClip" stateless="true" type="STRING" value="2018_02_18" widget="text"/>
+         <param access="1" constrainttype="INT_CHOICE" name="KiPro1.CueWhenPlayed" oid="KiPro1.CueWhenPlayed" precision="0" stateless="true" type="INT32" value="1" widget="checkbox">
+            <constraint key="0">No</constraint>
+            <constraint key="1">Yes</constraint>
+         </param>
+      </params>
+      <lookup id="hosts">
+         <entry key="KiPro1.address">192.168.11.143</entry>
+      </lookup>
+      <ogscript handles="onload" id="theBiz" name="onload" targetid="topLevel">params.setValue('KiPro1.IPAddress', 0, ogscript.getPrivateString('hosts', 'KiPro1.address'));
+loadStartup();</ogscript>
+      <ogscript handles="onchange" id="onchangeIP" name="onchangeIP" oid="KiPro1.IPAddress">ogscript.reload('theBiz');</ogscript>
+   </meta>
+   <tab height="369" id="theBiz" left="37" tabposition="north" top="54" width="698">
+      <abs name="Set Up">
+         <table left="101" top="87">
+            <tr>
+               <label colspan="3" eight="24" header="true" name="Step 1: Enter IP address of Ki Pro, then press &quot;Set&quot;" pheight="26" pwidth="472" style="txt-align:center;size:Big;"/>
+            </tr>
+            <tr>
+               <param colspan="1" expand="true" fill="both" left="0" oid="KiPro1.IPAddress" pheight="38" pwidth="330" rowspan="1" style="size:Normal;" top="0" width="200"/>
+               <button buttontype="push" colspan="1" fill="both" name="Set" pheight="38" pwidth="270" rowspan="1" style="size:Normal;">
+                  <task tasktype="ogscript">ogscript.putPrivateString('hosts', 'KiPro1.address', params.getValue('KiPro1.IPAddress',0));
+ogscript.debug('Set IP address to: ' +  ogscript.getPrivateString('hosts', 'KiPro1.address'));
+ogscript.debug('Starting timer.');
+ogscript.getTimerManager().getTimer('KiPro1.GetStatus').startTimer(false);</task>
+               </button>
+            </tr>
+            <tr>
+               <label colspan="3" eight="24" header="true" name="Step 2: Select the desired Video and Audio inputs." pheight="26" pwidth="474" style="txt-align:center;size:Big;"/>
+            </tr>
+            <tr>
+               <label colspan="1" fill="both" left="849" name="Video Source" pheight="6" pwidth="330" rowspan="1" style="txt-align:west;" top="20" weightx="1.0" weighty="1.0"/>
+               <label colspan="1" fill="both" left="848" name="Audio Source" pheight="6" pwidth="270" rowspan="1" style="txt-align:west;" top="104" weightx="1.0" weighty="1.0"/>
+            </tr>
+            <tr>
+               <param colspan="1" expand="true" fill="both" left="849" oid="KiPro1.VideoInput" pheight="12" pwidth="330" rowspan="1" top="65" weightx="1.0" weighty="1.0">
+                  <task tasktype="ogscript">var Input = params.getStrValue('KiPro1.VideoInput', 0);
+ogscript.debug('configuration: video input: ' + Input);
+
+var KiProURL = '/config?action=set&amp;paramid=eParamID_VideoInSelect';
+
+var KiProParameter = this.getValue();
+
+ogscript.debug(KiProURL);
+ogscript.debug('Setting Video Input to ' + KiProParameter);
+ogscript.asyncPost('http://' + ogscript.getPrivateString('hosts', 'KiPro1.address') + KiProURL + '&amp;value=' + KiProParameter, null, null);</task>
+               </param>
+               <param colspan="1" expand="true" fill="both" left="849" oid="KiPro1.AudioInput" pheight="12" pwidth="270" rowspan="1" top="140" weightx="1.0" weighty="1.0">
+                  <task tasktype="ogscript">var Input = params.getStrValue('KiPro1.AudioInput', 0);
+ogscript.debug('configuration: audio input: ' + Input);
+
+var KiProURL = '/config?action=set&amp;paramid=eParamID_AudioInSelect';
+
+var KiProParameter = this.getValue();
+
+ogscript.debug(KiProURL);
+ogscript.debug('Setting Audio Input to ' + KiProParameter);
+ogscript.asyncPost('http://' + ogscript.getPrivateString('hosts', 'KiPro1.address') + KiProURL + '&amp;value=' + KiProParameter, null, null);</task>
+               </param>
+            </tr>
+         </table>
+         <label height="20" left="8" name="KiPro CustomPanel by Joseph Adams, jadams@fellowshipgreenville.org. Copyright 2018." style="txt-align:west;" top="294" width="650"/>
+      </abs>
+      <abs name="Production">
+         <tab tabposition="none">
+            <abs id="KiPro1.TransportTab">
+               <button buttontype="push" height="50" id="btnKiPro1.TransportControl.Rewind" left="10" name="&lt;html&gt;&amp;#x25c0;&amp;#x25c0;&lt;/html&gt;" style="bdr:Shadow;size:Normal;bg#cccccc;" top="190" width="50">
+                  <task tasktype="ogscript">KiPro_Transport('KiPro1','Rewind',null);</task>
+               </button>
+               <button buttontype="push" height="50" id="btnKiPro1.TransportControl.Play" left="80" name="&lt;html&gt;&amp;#x25b6;&lt;/html&gt;" style="bdr:Shadow;size:Normal;bg#cccccc;" top="190" width="50">
+                  <task tasktype="ogscript">if (params.getValue('KiPro1.CueWhenPlayed',0) == 1)
+            {
+               if (KiPro_GetTransportState('KiPro1') == 'Paused')
+               {
+                  KiPro_Transport('KiPro1','Stop',null);
+               }
+               KiPro_CueSelectedClip('KiPro1',params.getValue('KiPro1.Clips', 0));
+            }
+            KiPro_Transport('KiPro1','Play',null);</task>
+               </button>
+               <button buttontype="push" height="50" id="btnKiPro1.TransportControl.FastForward" left="150" name="&lt;html&gt;&amp;#x25b6;&amp;#x25b6;&lt;/html&gt;" style="bdr:Shadow;size:Normal;bg#cccccc;" top="190" width="50">
+                  <task tasktype="ogscript">KiPro_Transport('KiPro1','FastForward',null);</task>
+               </button>
+               <button buttontype="push" height="50" id="btnKiPro1.TransportControl.Stop" left="220" name="&lt;html&gt;&amp;#x25a0;&lt;/html&gt;" style="bdr:Shadow;size:Bigger;bg#000066;" top="190" width="50">
+                  <task tasktype="ogscript">KiPro_Transport('KiPro1','Stop',null);</task>
+               </button>
+               <button buttontype="push" height="50" id="btnKiPro1.TransportControl.Record" left="290" name="&lt;html&gt;&amp;#8226;&lt;/html&gt;" style="bdr:Shadow;size:Bigger;bg#660000;" top="190" width="50">
+                  <task tasktype="ogscript">KiPro_Transport('KiPro1','Record',params.getStrValue('KiPro1.NewClip', 0));</task>
+               </button>
+               <label height="30" id="lblKiPro1NewClipLabel" left="354" name="New Clip Name:" top="200" width="100"/>
+               <param height="34" left="457" oid="KiPro1.NewClip" top="198" width="213"/>
+               <button buttontype="push" height="50" id="btnKiPro1_CueSelectedClip" left="141" name="Cue Selected Clip" style="size:Normal;bg#000066;" top="137" width="150">
+                  <task tasktype="ogscript">KiPro_CueSelectedClip('KiPro1',params.getValue('KiPro1.Clips', 0));</task>
+               </button>
+               <param expand="true" height="50" left="282" oid="KiPro1.CueWhenPlayed" top="135" width="50"/>
+               <label height="30" id="lblKiPro1CueClip" left="325" name="Cue Selected Clip When Played" top="143" width="200"/>
+            </abs>
+            <abs id="KiPro1.DataTab">
+               <button buttontype="push" height="50" id="btnKiPro1_DeleteSelectedClip" left="141" name="Delete Selected Clip" style="size:Normal;bg#990000;" top="137" width="150">
+                  <task tasktype="ogscript">KiPro_DeleteSelectedClip('KiPro1',params.getValue('KiPro1.Clips', 0));
+            KiPro_GetClips('KiPro1','KiPro1.Clips');</task>
+               </button>
+               <param height="34" left="331" oid="KiPro1.File" top="193" widget="WIDGET_FILE_DOWNLOAD" width="300"/>
+            </abs>
+         </tab>
+         <label height="30" id="lblKiPro1.Name" left="11" name="KiPro 1 Status:" top="0" width="200"/>
+         <label height="30" id="lblKiPro1.TransportStatus" left="200" name="undefined" top="0" width="100"/>
+         <label height="30" id="lblKiPro1.CurrentClipLabel" left="11" name="Current Clip:" top="15" width="200"/>
+         <param height="30" left="100" name="" oid="KiPro1.CurrentClip" top="15" widget="label" width="300"/>
+         <label height="30" id="lblKiPro1.SlotLabel" left="500" name="Slot:" top="10" width="100"/>
+         <label height="30" id="lblKiPro1.Slot" left="530" name="undefined" top="10" width="100"/>
+         <button buttontype="push" height="55" id="btnKiPro1_ChangeSlot" left="623" name="&lt;html&gt;&lt;center&gt;Change Slot&lt;/center&gt;&lt;/html&gt;" style="size:Small;bg#990000;" top="0" width="55">
+            <task tasktype="ogscript">KiPro_ChangeSlot('KiPro1');</task>
+         </button>
+         <param height="80" id="" left="7" oid="KiPro1.Clips" rowspan="1" scroll="vertical" top="56" widget="list" width="670"/>
+         <button buttontype="push" height="50" id="btnKiPro1_UpdateClipList" left="9" name="Update Clip List" style="size:Normal;bg#000066;" top="137" width="130">
+            <task tasktype="ogscript">KiPro_GetClips('KiPro1','KiPro1.Clips');</task>
+         </button>
+         <label height="30" id="lblKiPro1.Message" left="10" name="" top="275" width="400"/>
+         <button buttontype="push" height="50" id="btnKiPro1_ChangeMediaState" left="572" name="&lt;html&gt;&lt;center&gt;Change Media State&lt;/center&gt;&lt;/html&gt;" style="size:Normal;bg#navigationbg;" top="273" width="100">
+            <task tasktype="ogscript">KiPro_ChangeMediaState('KiPro1');</task>
+         </button>
+      </abs>
+   </tab>
+   <label height="28" left="42" name="Aja KiPro Control" style="txt-align:west;size:Big;" top="21" width="311"/>
+</abs>
