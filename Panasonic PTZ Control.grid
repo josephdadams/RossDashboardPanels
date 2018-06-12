@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><abs contexttype="opengear" id="topLevel" name="PTZControl">
+   <meta>
+      <api>function tellPTZ(preset)
+        {
+         var address = ogscript.getPrivateString('hosts', 'PTZ.address');
+               var CGIUrl = '/cgi-bin/aw_ptz?cmd=';
+               var CGICommand = '%23R' + preset;
+               CGICommand = CGICommand + '&amp;res=1';
+               
+               var message = 'GET ' + CGIUrl + CGICommand + ' HTTP/1.1\r\n' + 
+               'Host: ' + address + ' \r\n' + 
+               'Connection: close\r\n' +
+               '\r\n?';
+                              
+               rosstalk.sendMessage(address, 80, message, callback);
+      }
+
+      function callback(success, sentData, resultString, exception)
+      {
+         ogscript.debug(resultString);
+      }
+
+      function onProductionLoad()
+      {
+         params.setValue('ptzaddress', 0, ogscript.getPrivateString('hosts', 'PTZ.address'));
+      }</api>
+      <params>
+         <param access="1" maxlength="0" name="ptzaddress" oid="ptzaddress" type="STRING" value="192.168.11.39" widget="default"/>
+      </params>
+      <lookup id="hosts">
+         <entry key="PTZ.address">192.168.11.39</entry>
+      </lookup>
+      <ogscript handles="onload" id="tbSetup" name="onload" targetid="topLevel">ogscript.debug('tbSetup onload complete.');</ogscript>
+      <ogscript handles="onload" id="tbProduction" name="onload" targetid="topLevel">onProductionLoad();
+      ogscript.debug('tbProduction onload complete.');</ogscript>
+   </meta>
+   <tab height="610" id="theControl" left="27" top="60" width="670">
+      <abs id="tbProduction" name="Production">
+         <meta/>
+         <label height="30" id="lblPresets" left="11" name="Presets" top="0" width="200"/>
+         <button buttontype="push" gpi="1" height="80" id="btnPTZ_01" left="70" name="&lt;html&gt;&lt;center&gt;1&lt;br /&gt;Wide&lt;/center&gt;&lt;/html&gt;" style="size:Normal;bg#000066;" top="30" width="100">
+            <task tasktype="ogscript">tellPTZ('00');</task>
+         </button>
+         <button buttontype="push" gpi="2" height="80" id="btnPTZ_02" left="170" name="&lt;html&gt;&lt;center&gt;2&lt;br /&gt;Left&lt;/center&gt;&lt;/html&gt;" style="size:Normal;bg#000066;" top="30" width="100">
+            <task tasktype="ogscript">tellPTZ('01');</task>
+         </button>
+         <button buttontype="push" gpi="3" height="80" id="btnPTZ_03" left="270" name="&lt;html&gt;&lt;center&gt;3&lt;br /&gt;Center-Left&lt;/center&gt;&lt;/html&gt;" style="size:Normal;bg#000066;" top="30" width="100">
+            <task tasktype="ogscript">tellPTZ('02');</task>
+         </button>
+         <button buttontype="push" gpi="4" height="80" id="btnPTZ_04" left="370" name="&lt;html&gt;&lt;center&gt;4&lt;br /&gt;Center&lt;/center&gt;&lt;/html&gt;" style="size:Normal;bg#000066;" top="30" width="100">
+            <task tasktype="ogscript">tellPTZ('03');</task>
+         </button>
+         <button buttontype="push" gpi="5" height="80" id="btnPTZ_05" left="470" name="&lt;html&gt;&lt;center&gt;5&lt;br /&gt;Center-Right&lt;/center&gt;&lt;/html&gt;" style="size:Normal;bg#000066;" top="30" width="100">
+            <task tasktype="ogscript">tellPTZ('04');</task>
+         </button>
+         <button buttontype="push" gpi="6" height="80" id="btnPTZ_06" left="70" name="&lt;html&gt;&lt;center&gt;6&lt;br /&gt;Right&lt;/center&gt;&lt;/html&gt;" style="size:Normal;bg#000066;" top="110" width="100">
+            <task tasktype="ogscript">tellPTZ('05');</task>
+         </button>
+         <button buttontype="push" gpi="7" height="80" id="btnPTZ_07" left="170" name="7" style="size:Normal;bg#000066;" top="110" width="100">
+            <task tasktype="ogscript">tellPTZ('06');</task>
+         </button>
+         <button buttontype="push" gpi="8" height="80" id="btnPTZ_08" left="270" name="8" style="size:Normal;bg#000066;" top="110" width="100">
+            <task tasktype="ogscript">tellPTZ('07');</task>
+         </button>
+         <button buttontype="push" gpi="9" height="80" id="btnPTZ_09" left="370" name="9" style="size:Normal;bg#000066;" top="110" width="100">
+            <task tasktype="ogscript">tellPTZ('08');</task>
+         </button>
+         <button buttontype="push" gpi="10" height="80" id="btnPTZ_10" left="470" name="10" style="size:Normal;bg#000066;" top="110" width="100">
+            <task tasktype="ogscript">tellPTZ('09');</task>
+         </button>
+         <browser height="363" id="ptzBrowser" left="8" top="200" url="PTZ_loadingpage.html" width="643"/>
+      </abs>
+      <abs id="tbSetup" name="Setup">
+         <label height="40" left="215" name="IP Address:" top="236"/>
+         <param height="35" left="300" oid="ptzaddress" style="size:Normal;" top="238" width="120"/>
+         <button buttontype="push" colspan="1" fill="both" height="50" left="205" name="Set" pheight="38" pwidth="179" rowspan="1" style="size:Normal;" top="281" width="215">
+            <task tasktype="ogscript">ogscript.putPrivateString('hosts', 'PTZ.address', params.getValue('ptzaddress',0));
+            var cgiURL = '/cgi-bin/mjpeg?resolution=640x360&amp;framerate=30&amp;quality=1';
+            ogscript.getComponentsById('ptzBrowser')[0].setUrl('http://' + params.getValue('ptzaddress',0) + cgiURL);</task>
+         </button>
+      </abs>
+   </tab>
+   <label height="40" left="25" name="Panasonic AW-HE40 PTZ Control" style="txt-align:west;size:Big;" top="15" width="490"/>
+</abs>
