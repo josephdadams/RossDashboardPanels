@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?><abs contexttype="opengear" id="topLevel" name="VideoHubControl">
+   <meta>
+      <api>function tellVideoHub(destination, source)
+         {        
+            var telnetScript = "VIDEO OUTPUT ROUTING:\r\n";
+            telnetScript = telnetScript + destination + ' ' + source + "\r\n";  
+            telnetScript = telnetScript + "\r\n";
+
+            rosstalk.sendMessage(ogscript.getPrivateString('hosts', 'VideoHub.Address'),ogscript.getPrivateString('hosts', 'VideoHub.Port'),telnetScript,callback);
+         }
+
+         function callback(success, sentData, resultString, exception)
+         {
+            //ogscript.debug('results:');
+            //ogscript.debug('success: ' + success);
+            //ogscript.debug('sentData: ' + sentData);
+            //ogscript.debug('resultString: ' + resultString);
+            //ogscript.debug('exception: ' + exception);
+         }
+      
+      
+      function getVideoHubInputLabels()
+      {
+         //This is our callback
+         //We will pass it to the listener and the listener will notify it when
+         //it has received the complete response to the command we sent
+         var callbackFunction = function(result) {
+            //Reset our 'busy' state
+            ogscript.putObject('InputsBusy', false);
+         
+            //Stop the command sender
+            ogscript.getListenerById('commandSenderInputs').stop();
+         
+            //If we didn't get a result, we can't do much more
+            if (result == null || result == undefined) {
+               ogscript.debug('no result');
+               return;
+            }
+            else
+            {
+               //ogscript.debug('WE GOT SOMETHING!' + result[0]);
+            }
+         
+            //If we did, let's update our Input list
+            params.replaceConstraint('Inputs', params.createIntChoiceConstraint(result));
+         };
+
+         //If we are already processing something, we can't process something ELSE
+         if (ogscript.getObject('InputsBusy')) {
+            ogscript.debug('can\'t do anything. already busy');
+         } else {
+            //Put the connection into a known state
+            ogscript.getListenerById('commandSenderInputs').stop();
+            
+            //Mark oursevles as 'busy' so nothing else gets sent
+            ogscript.putObject('InputsBusy', true);
+            
+            //Store this so the listener knows what to send
+            ogscript.putObject('sendCommandInputs', 'INPUT LABELS');
+            
+            //Add a callback for the listener to call when we are done
+            ogscript.putObject('callbackInputs', callbackFunction);
+         
+            //start the listener so it can send the command and read the result
+            ogscript.getListenerById('commandSenderInputs').start();
+         }
+      }
+
+      function getVideoHubOutputLabels()
+      {
+         //This is our callback
+         //We will pass it to the listener and the listener will notify it when
+         //it has received the complete response to the command we sent
+         var callbackFunction = function(result) {
+            //Reset our 'busy' state
+            ogscript.putObject('OutputsBusy', false);
+         
+            //Stop the command sender
+            ogscript.getListenerById('commandSenderOutputs').stop();
+         
+            //If we didn't get a result, we can't do much more
+            if (result == null || result == undefined) {
+               ogscript.debug('no output result');
+               return;
+            }
+            else
+            {
+               //ogscript.debug('WE GOT SOMETHING!' + result[0]);
+            }
+         
+            //If we did, let's update our Output list
+            ogscript.debug("output result list: " + result);
+            params.replaceConstraint('Outputs', params.createIntChoiceConstraint(result));
+         };
+
+         //If we are already processing something, we can't process something ELSE
+         if (ogscript.getObject('OutputsBusy')) {
+            ogscript.debug('can\'t do anything. already busy');
+         } else {
+            //Put the connection into a known state
+            ogscript.getListenerById('commandSenderOutputs').stop();
+            
+            //Mark oursevles as 'busy' so nothing else gets sent
+            ogscript.putObject('OutputsBusy', true);
+            
+            //Store this so the listener knows what to send
+            ogscript.putObject('sendCommandOutputs', 'OUTPUT LABELS');
+            
+            //Add a callback for the listener to call when we are done
+            ogscript.putObject('callbackOutputs', callbackFunction);
+         
+            //start the listener so it can send the command and read the result
+            ogscript.getListenerById('commandSenderOutputs').start();
+         }
+      }
+      
+      function loadLabels()
+      {
+         ogscript.putObject('InputsNum', params.getValue('VideoHub.InputsNum', 0));
+         ogscript.putObject('OutputsNum', params.getValue('VideoHub.OutputsNum', 0));
+         
+         ogscript.putObject('InputsCount', null);
+         ogscript.putObject('OutputsCount', null);
+         
+         getVideoHubInputLabels();
+         getVideoHubOutputLabels();
+      }</api>
+      <params>
+         <param access="1" maxlength="0" name="VideoHub_Address" oid="VideoHub.Address" type="STRING" value="192.168.11.128" widget="default"/>
+         <param access="1" maxlength="0" name="VideoHub_Port" oid="VideoHub.Port" type="STRING" value="9990" widget="default"/>
+         <param access="1" maxlength="0" name="VideoHub_InputsNum" oid="VideoHub.InputsNum" type="STRING" value="72" widget="default"/>
+         <param access="1" maxlength="0" name="VideoHub_OutputsNum" oid="VideoHub.OutputsNum" type="STRING" value="72" widget="default"/>
+         <param access="1" constrainttype="INT_CHOICE" name="Inputs" oid="Inputs" precision="0" stateless="true" type="INT32" value="0" widget="combo">
+            <constraint key="0">Input 1</constraint>
+         </param>
+         <param access="1" constrainttype="INT_CHOICE" name="Outputs" oid="Outputs" precision="0" stateless="true" type="INT32" value="0" widget="combo">
+            <constraint key="0">Output 1</constraint>
+         </param>
+      </params>
+      <lookup id="hosts">
+         <entry key="VideoHub.Address">192.168.11.128</entry>
+         <entry key="VideoHub.Port">9990</entry>
+         <entry key="VideoHub.InputsNum">72</entry>
+         <entry key="VideoHub.OutputsNum">72</entry>
+      </lookup>
+      <ogscript handles="onload" id="tbSetup" name="onload" targetid="topLevel">params.setValue('VideoHub.Address', 0, ogscript.getPrivateString('hosts', 'VideoHub.Address'));
+         params.setValue('VideoHub.Port', 0, ogscript.getPrivateString('hosts', 'VideoHub.Port'));
+         params.setValue('VideoHub.InputsNum', 0, ogscript.getPrivateString('hosts', 'VideoHub.InputsNum'));
+         params.setValue('VideoHub.OutputsNum', 0, ogscript.getPrivateString('hosts', 'VideoHub.OutputsNum'));
+         ogscript.debug('tbSetup onload complete.');</ogscript>
+      <ogscript handles="onload" id="tbProduction" name="onload" targetid="topLevel">ogscript.debug('tbProduction onload complete.');</ogscript>
+   </meta>
+   <label height="40" left="40" name="VideoHub Control" style="txt-align:west;size:Big;" top="12" width="200"/>
+   <tab height="233" id="theControl" left="33" top="55" width="376">
+      <abs id="tbProduction" name="Production">
+         <label height="50" left="10" name="Source:" top="0" width="90"/>
+         <param height="30" id="" left="10" oid="Inputs" rowspan="1" scrolling="true" top="33" widget="tree-popup" width="350"/>
+         <label height="29" left="10" name="Destination:" top="65" width="90"/>
+         <param height="30" id="" left="10" oid="Outputs" rowspan="1" scrolling="true" top="93" widget="tree-popup" width="350"/>
+         <button buttontype="push" height="60" id="Route" left="7" name="Go" top="127" width="350">
+            <task tasktype="ogscript">tellVideoHub(params.getValue('Outputs', 0),params.getValue('Inputs', 0));</task>
+         </button>
+         <label height="46" id="VideoHubConnectLabel" left="10" name="Disconnected from VideoHub" style="font:bold;bdr:etched;bg#dark;size:Big;fg#F60505;txt-align:center;" top="124" visible="false" width="350"/>
+      </abs>
+      <abs id="tbSetup" name="Setup">
+         <label height="47" left="5" name="VideoHub Settings" style="size:Big;" top="-7" width="217"/>
+         <label height="20" left="10" name="IP Address:" top="40" width="80"/>
+         <param height="30" left="90" oid="VideoHub.Address" top="35" width="150"/>
+         <label height="20" left="250" name="Port:" top="40" width="50"/>
+         <param height="30" left="290" oid="VideoHub.Port" top="35" width="50"/>
+         <label height="20" left="34" name="Inputs:" top="75" width="50"/>
+         <param height="30" left="90" oid="VideoHub.InputsNum" top="70" width="50"/>
+         <label height="20" left="25" name="Outputs:" top="110" width="60"/>
+         <param height="30" left="90" oid="VideoHub.OutputsNum" top="105" width="50"/>
+         <button buttontype="push" fill="both" height="50" left="5" name="Set and Update Labels" top="140" width="350">
+            <task tasktype="ogscript">ogscript.putPrivateString('hosts', 'VideoHub.Address', params.getValue('VideoHub.Address',0));
+               ogscript.putPrivateString('hosts', 'VideoHub.Port', params.getValue('VideoHub.Port',0));
+               ogscript.putPrivateString('hosts', 'VideoHub.InputsNum', params.getValue('VideoHub.InputsNum',0));
+               ogscript.putPrivateString('hosts', 'VideoHub.OutputsNum', params.getValue('VideoHub.OutputsNum',0));
+               loadLabels();</task>
+         </button>
+      </abs>
+   </tab>
+   <listener autostart="false" buttontype="toggle" colspan="1" connecthost="%const['hosts']['VideoHub.Address']%" connectport="%const['hosts']['VideoHub.Port']%" delimitertype="newline" fill="both" height="100" id="commandSenderInputs" left="1144" name="Comms" pheight="168" pwidth="150" style="style:ToggleButtons;" top="57" visible="false" width="150">
+      <task tasktype="ogscript">if (event.isConnectEvent())
+      {
+           ogscript.rename('ConnectLabel', 'Connected to VideoHub&lt;fg#00FF00&gt;');
+           var commandToSend = ogscript.getObject('sendCommandInputs');
+
+           if (commandToSend != null)
+           {
+              //ogscript.debug('sending command: ' + commandToSend);
+              this.writeString(commandToSend + '\n', false);
+           }
+           else
+           {
+              ogscript.debug ('command to send was null');
+           }
+        }
+        else if (event.isMessageEvent())
+        {
+           var message = event.getBytesAsString().trim();
+
+           var commandToSend = ogscript.getObject('sendCommandInputs');
+           //ogscript.debug("Command To Send: " + commandToSend);
+
+               var startmsgsearch = message.indexOf('INPUT LABELS:');
+               if (startmsgsearch != -1)
+               {
+                 ogscript.debug('Number of Inputs = ' + ogscript.getObject('InputsNum'));
+                 ogscript.putObject('InputsCount', 0);
+                 ogscript.putObject('responseBuilderInputs', new Array());
+               }
+               else
+               {
+                 var inputsnum = ogscript.getObject('InputsNum');
+                 var inputscount = ogscript.getObject('InputsCount');
+                 if (inputscount != null)
+                 {
+                   if (inputscount == inputsnum)
+                   {
+                       ogscript.debug('end of response');
+                       ogscript.putObject('InputsBusy', false);
+                       var responseObject = ogscript.getObject('responseBuilderInputs');
+                       var callback = ogscript.getObject('callbackInputs');
+                       if (callback != null)
+                       {
+                       //ogscript.debug('making callback with ' + responseObject);
+                       callback(responseObject);   
+                       }
+                       ogscript.putObject('InputsCount', null);
+                   }
+                   else if (inputscount &lt; inputsnum)
+                   {
+                          var inputnamestart = message.indexOf(' ');
+                          var inputnameparsed = message.substr(inputnamestart);
+                          //ogscript.debug('input name received: ' + inputnameparsed);
+                          //ogscript.debug('input received: ' + message);
+                           ogscript.getObject('responseBuilderInputs').push(inputnameparsed);
+                          inputscount++;
+                          ogscript.putObject('InputsCount', inputscount);
+                   }
+                   else
+                   {
+                       ogscript.debug('message received ' + message);
+                   }    
+                }
+              }
+        }
+    else if (event.isDisconnectEvent())
+    {
+       ogscript.rename('ConnectLabel', 'Disconnected from VideoHub&lt;fg#FF0000&gt;');
+       ogscript.debug('connection closed');
+       ogscript.putObject('InputsBusy', false);
+    }
+    else
+    {
+        ogscript.debug('no event info');
+    }</task>
+   </listener>
+   <listener autostart="false" buttontype="toggle" colspan="1" connecthost="%const['hosts']['VideoHub.Address']%" connectport="%const['hosts']['VideoHub.Port']%" delimitertype="newline" fill="both" height="100" id="commandSenderOutputs" left="1144" name="Comms" pheight="168" pwidth="150" style="style:ToggleButtons;" top="57" visible="false" width="150">
+      <task tasktype="ogscript">if (event.isConnectEvent())
+      {
+           ogscript.rename('ConnectLabel', 'Connected to VideoHub&lt;fg#00FF00&gt;');
+           var commandToSend = ogscript.getObject('sendCommandOutputs');
+           if (commandToSend != null)
+           {
+              this.writeString(commandToSend + '\n', false);
+           }
+           else
+           {
+              ogscript.debug ('command to send was null');
+           }
+        }
+        else if (event.isMessageEvent())
+        {
+           var message = event.getBytesAsString().trim();
+
+           var commandToSend = ogscript.getObject('sendCommandOutputs');
+
+               var startmsgsearch = message.indexOf('OUTPUT LABELS:');
+               if (startmsgsearch != -1)
+               {
+                 ogscript.debug('Number of Outputs = ' + ogscript.getObject('OutputsNum'));
+                 ogscript.putObject('OutputsCount', 0);
+                 ogscript.putObject('responseBuilderOutputs', new Array());
+               }
+               else
+               {
+                 var outputsnum = ogscript.getObject('OutputsNum');
+                 var outputscount = ogscript.getObject('OutputsCount');
+                 if (outputscount != null)
+                 {
+                   if (outputscount == outputsnum)
+                   {
+                       ogscript.debug('end of response');
+                       ogscript.putObject('OutputsBusy', false);
+                       var responseObject = ogscript.getObject('responseBuilderOutputs');
+                       var callback = ogscript.getObject('callbackOutputs');
+                       if (callback != null)
+                       {
+                       //ogscript.debug('making callback with ' + responseObject);
+                       callback(responseObject);   
+                       }
+                       ogscript.putObject('OutputsCount', null);
+                   }
+                   else if (outputscount &lt; outputsnum)
+                   {
+                          var outputnamestart = message.indexOf(' ');
+                          var outputnameparsed = message.substr(outputnamestart);
+                          //ogscript.debug('output received: ' + message);
+                          ogscript.getObject('responseBuilderOutputs').push(outputnameparsed);
+                          outputscount++;
+                          ogscript.putObject('OutputsCount', outputscount);
+                   }
+                   else
+                   {
+                       ogscript.debug('message received ' + message);
+                   }    
+                }
+              }
+        }
+    else if (event.isDisconnectEvent())
+    {
+       ogscript.rename('ConnectLabel', 'Disconnected from VideoHub&lt;fg#FF0000&gt;');
+       ogscript.debug('connection closed');
+       ogscript.putObject('OutputsBusy', false);
+    }
+    else
+    {
+        ogscript.debug('no event info');
+    }</task>
+   </listener>
+</abs>
