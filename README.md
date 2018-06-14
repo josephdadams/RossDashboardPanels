@@ -6,3 +6,6 @@ You can control your AJA Ki Pro recording device within Dashboard using this pan
 
 Panasonic PTZ Control.grid
 You can control your Panasonic AW-HE40 PTZ camera with this panel.
+
+VideoHub Control.grid
+You can control your Blackmagic VideoHub router with this panel. Supports loading of input and output labels.
