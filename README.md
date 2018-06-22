@@ -9,3 +9,6 @@ You can control your Panasonic AW-HE40 PTZ camera with this panel.
 
 # VideoHub Control.grid
 You can control your Blackmagic VideoHub router with this panel. Supports loading of input and output labels.
+
+# Countdowns.grid
+Using the accompanying clock.html file, you can run some basic countdowns with this panel. The clock.html file should be in a subfolder called "clock".
