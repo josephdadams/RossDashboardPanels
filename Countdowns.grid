@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?><abs contexttype="opengear">
+   <meta>
+      <api>// CLOCK FUNCTIONS //
+      function updateCountdowns()
+      {
+         var path = "clock/countdowndata.js";
+
+         var countdown1_date = params.getValue("Countdown1_Date", 0);
+         var countdown1_time = params.getValue("Countdown1_Time", 0);
+         var countdown1_publishTime = params.getValue("Countdown1_PublishTime", 0);
+         var countdown1_expireTime = params.getValue("Countdown1_ExpireTime", 0);
+
+         var countdown2_date = params.getValue("Countdown2_Date", 0);
+         var countdown2_time = params.getValue("Countdown2_Time", 0);
+         var countdown2_publishTime = params.getValue("Countdown2_PublishTime", 0);
+         var countdown2_expireTime = params.getValue("Countdown2_ExpireTime", 0);
+         
+         var data = "";
+         data += "var d_countdown1_datetime = new Date('" + countdown1_date + " " + countdown1_time + "');";
+         data += "\n";
+         data += "var d_countdown1_publishMinutes = " + countdown1_publishTime + ";";
+         data += "\n";
+         data += "var d_countdown1_expireMinutes = " + countdown1_expireTime + ";";
+         data += "\n";
+         data += "var d_countdown2_datetime = new Date('" + countdown2_date + " " + countdown2_time + "');";
+         data += "\n";
+         data += "var d_countdown2_publishMinutes = " + countdown2_publishTime + ";";
+         data += "\n";
+         data += "var d_countdown2_expireMinutes = " + countdown2_expireTime + ";";
+         ogscript.saveToFile(path, data, true);
+      }</api>
+      <params>
+         <param access="1" maxlength="0" name="Countdown 1 Date" oid="Countdown1_Date" type="STRING" value="Jun 24, 2018" widget="date-picker-string"/>
+         <param access="1" maxlength="0" name="Countdown 1 Time" oid="Countdown1_Time" type="STRING" value="09:00:00" widget="time-picker"/>
+         <param access="1" constrainttype="INT_CHOICE" name="Countdown 1 Publish Time" oid="Countdown1_PublishTime" precision="0" type="INT32" value="10080" widget="default">
+            <constraint key="0">(do not publish)</constraint>
+            <constraint key="2">2 minutes</constraint>
+            <constraint key="5">5 minutes</constraint>
+            <constraint key="10">10 minutes</constraint>
+            <constraint key="20">20 minutes</constraint>
+            <constraint key="30">30 minutes</constraint>
+            <constraint key="60">1 hour</constraint>
+            <constraint key="120">2 hours</constraint>
+            <constraint key="1440">1 day</constraint>
+            <constraint key="4320">3 days</constraint>
+            <constraint key="10080">7 days</constraint>
+         </param>
+         <param access="1" constrainttype="INT_CHOICE" name="Countdown 1 Expire Time" oid="Countdown1_ExpireTime" type="INT32" value="2" widget="WIDGET_TREE">
+            <constraint key="0">(do not expire)</constraint>
+            <constraint key="1">1 minute</constraint>
+            <constraint key="2">2 minutes</constraint>
+            <constraint key="5">5 minutes</constraint>
+            <constraint key="10">10 minutes</constraint>
+         </param>
+         <param access="1" maxlength="0" name="Countdown 2 Date" oid="Countdown2_Date" type="STRING" value="Jun 24, 2018" widget="date-picker-string"/>
+         <param access="1" maxlength="0" name="Countdown 2 Time" oid="Countdown2_Time" type="STRING" value="11:00:00" widget="time-picker"/>
+         <param access="1" constrainttype="INT_CHOICE" name="Countdown 2 Publish Time" oid="Countdown2_PublishTime" precision="0" type="INT32" value="20" widget="default">
+            <constraint key="0">(do not publish)</constraint>
+            <constraint key="2">2 minutes</constraint>
+            <constraint key="5">5 minutes</constraint>
+            <constraint key="10">10 minutes</constraint>
+            <constraint key="20">20 minutes</constraint>
+            <constraint key="30">30 minutes</constraint>
+            <constraint key="60">1 hour</constraint>
+            <constraint key="120">2 hours</constraint>
+            <constraint key="1440">1 day</constraint>
+            <constraint key="4320">3 days</constraint>
+            <constraint key="10080">7 days</constraint>
+         </param>
+         <param access="1" constrainttype="INT_CHOICE" name="Countdown 2 Expire Time" oid="Countdown2_ExpireTime" precision="0" type="INT32" value="5" widget="default">
+            <constraint key="0">(do not expire)</constraint>
+            <constraint key="1">1 minute</constraint>
+            <constraint key="2">2 minutes</constraint>
+            <constraint key="5">5 minutes</constraint>
+            <constraint key="10">10 minutes</constraint>
+         </param>
+      </params>
+      <ogscript handles="onload" id="tbCountdowns" name="onload" targetid="topLevel">ogscript.debug('Countdowns Panel loaded.');</ogscript>
+   </meta>
+   <label height="30" id="lblCountdown1Label" left="10" name="Countdown 1:" style="size:Big" top="10" width="160"/>
+   <label height="30" id="lblCountdown1DateLabel" left="60" name="Date:" top="40" width="100"/>
+   <param expand="true" height="28" left="100" oid="Countdown1_Date" showlabel="false" style="size:Normal;" top="40" width="130"/>
+   <label height="30" id="lblCountdown1TimeLabel" left="56" name="Time:" top="73" width="100"/>
+   <param expand="true" height="30" left="100" oid="Countdown1_Time" showlabel="false" style="size:Normal" top="75" width="130"/>
+   <label height="30" id="lblCountdown1PublishLabel" left="9" name="Publish Time:" top="110" width="100"/>
+   <param expand="true" height="30" left="100" oid="Countdown1_PublishTime" showlabel="false" style="size:Normal" top="110" width="130"/>
+   <label height="31" id="lblCountdown1PublishDescription" left="240" name="When the countdown should become visible, in minutes." top="110" width="370"/>
+   <label height="30" id="lblCountdown1ExpireLabel" left="44" name="Expires:" top="150" width="100"/>
+   <param expand="true" height="30" left="100" oid="Countdown1_ExpireTime" showlabel="false" style="size:Normal" top="150" width="130"/>
+   <label height="30" id="lblCountdown1ExpiresDescription" left="240" name="When the countdown should highlight red, in minutes." top="150" width="370"/>
+   <label height="30" id="lblCountdown2Label" left="10" name="Countdown 2:" style="size:Big" top="185" width="160"/>
+   <label height="30" id="lblCountdown2DateLabel" left="60" name="Date:" top="215" width="100"/>
+   <param expand="true" height="30" left="100" oid="Countdown2_Date" showlabel="false" style="size:Normal" top="215" width="130"/>
+   <label height="30" id="lblCountdown2TimeLabel" left="56" name="Time:" top="250" width="100"/>
+   <param expand="true" height="30" left="100" oid="Countdown2_Time" showlabel="false" style="size:Normal" top="250" width="130"/>
+   <label height="30" id="lblCountdown2PublishLabel" left="9" name="Publish Time:" top="285" width="100"/>
+   <param expand="true" height="30" left="100" oid="Countdown2_PublishTime" showlabel="false" style="size:Normal" top="285" width="130"/>
+   <label height="31" id="lblCountdown2PublishDescription" left="240" name="When the countdown should become visible, in minutes." top="285" width="370"/>
+   <label height="30" id="lblCountdown2ExpireLabel" left="44" name="Expires:" top="325" width="100"/>
+   <param expand="true" height="30" left="100" oid="Countdown2_ExpireTime" showlabel="false" style="size:Normal" top="325" width="130"/>
+   <label height="30" id="lblCountdown2ExpiresDescription" left="240" name="When the countdown should highlight red, in minutes." top="325" width="370"/>
+   <button buttontype="push" height="40" id="btnCountdownsUpdate" left="60" name="Update" style="size:Normal;bg#999999;" top="370" width="170">
+      <task tasktype="ogscript">updateCountdowns();</task>
+   </button>
+</abs>
