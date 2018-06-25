@@ -10,54 +10,210 @@
 <html style="height:100%; margin:0; padding:0">
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-        <meta http-equiv="refresh" content="30">
+        <meta http-equiv="refresh" content="15">
 		<title>Clock</title>
 		<style type="text/css">
 			/* Customizable font and colors */
 			html {
-				background: #000000;
+				background: #111111;
 				font-family: sans-serif;
 				font-weight: bold;
 				color: #FFFFFF;
+                padding:30px;
 			}
+            
+        #clocktimedate {
+         top:148px;
+         font-size:200px;
+        padding:25px;
+        }
+        #clocktime {
+         font-size:100%;
+         font-weight:800;
+         line-height:1
+        }
+        #clockdate {
+         font-size:25%;
+         
+         font-weight:200;
+         left:1%
+        }
+        #clockHM {
+         color:#7BB861
+        }
+        #clockS {
+         top:12%;
+         position:absolute;
+         font-size:45%
+        }
+        #clockAMPM
+        {
+            position:absolute;
+            font-size:33%;
+            top:19%;
+            color:#908686;
+        }
+            
+        .countdowns-container
+        {
+            position:absolute;
+            padding:30px;
+        }
+            
+.countdown-container
+{
+ height:350px;
+ width:100%;
+ text-align:center;
+ color:#fff;
+}
+            
+.countdown {
+ display:-moz-inline-stack;
+ display:inline-block;
+}
+            
+.countdown_digit {
+    
+ font-size:180px;
+ padding:5px 30px;
+ background:#38414a;
+ background:rgba(40,50,61,.62);
+ font-family:sans-serif;
+ font-weight:300
+}
+            
+.countdown_seconds_digit {
+ color:#e55182
+}
+.countdown_digitlabel {
+ padding:5px;
+ font-size:23px;
+ text-align:left;
+ text-transform:uppercase;
+}
+            .countdown_label {
+                font-size:40px;
+                text-align:left;
+                    color:#908686;
+            }
+
+            #message {
+                position:absolute;
+                width: 30%;
+                top:10%;
+                right:20%;
+                font-size:5vw;
+            }
 		</style>
         <script type="text/javascript" src="countdowndata.js"></script>
 	</head>
 	
-	<body style="height:100%; margin:0; padding:0; justify-content:center; align-items:center">
-		<span id="clocktext" style="font-kerning:none"></span><br />
-		<span id="countdown1text" style="font-kerning:none"></span><br />
-        <span id="countdown1texttime" style="font-kerning:none"></span><br />
-        <span id="countdown2text" style="font-kerning:none"></span><br />
-        <span id="countdown2texttime" style="font-kerning:none"></span>
+	<body>
+        <div id="clocktimedate">
+            <div id="clockdate"></div>
+            <div id="clocktime">
+                <span id="clockHM"></span>
+                <span id="clockS"></span>
+                <span id="clockAMPM"></span>
+            </div>
+        </div>
+        <div class="countdowns-container">
+        <div id="countdown1" class="countdown-container">
+            <div id="countdown1_days" class="countdown">
+                <div id="countdown1_days_digit" class="countdown_digit"></div>
+                <div id="countdown1_days_label" class="countdown_digitlabel">Days</div>
+            </div>
+            <div id="countdown1_hours" class="countdown">
+                <div id="countdown1_hours_digit" class="countdown_digit"></div>
+                <div id="countdown1_hours_label" class="countdown_digitlabel">Hours</div>
+            </div>
+            <div id="countdown1_minutes" class="countdown">
+                <div id="countdown1_minutes_digit" class="countdown_digit"></div>
+                <div id="countdown1_minutes_label" class="countdown_digitlabel">Minutes</div>
+            </div>
+            <div id="countdown1_seconds" class="countdown">
+                <div id="countdown1_seconds_digit" class="countdown_digit countdown_seconds_digit"></div>
+                <div id="countdown1_seconds_label" class="countdown_digitlabel">Seconds</div>
+            </div>
+            <div id="countdown1_label" class="countdown_label"></div>
+        </div>
+        <div id="countdown2" class="countdown-container">
+            <div id="countdown2_days" class="countdown">
+                <div id="countdown2_days_digit" class="countdown_digit"></div>
+                <div id="countdown2_days_label" class="countdown_digitlabel">Days</div>
+            </div>
+            <div id="countdown2_hours" class="countdown">
+                <div id="countdown2_hours_digit" class="countdown_digit"></div>
+                <div id="countdown2_hours_label" class="countdown_digitlabel">Hours</div>
+            </div>
+            <div id="countdown2_minutes" class="countdown">
+                <div id="countdown2_minutes_digit" class="countdown_digit"></div>
+                <div id="countdown2_minutes_label" class="countdown_digitlabel">Minutes</div>
+            </div>
+            <div id="countdown2_seconds" class="countdown">
+                <div id="countdown2_seconds_digit" class="countdown_digit countdown_seconds_digit"></div>
+                <div id="countdown2_seconds_label" class="countdown_digitlabel">Seconds</div>
+            </div>
+            <div id="countdown2_label" class="countdown_label"></div>
+        </div>
+        </div>
+        <div id="message"></div>
         <script type="text/javascript">
-			
-			var textElem = document.getElementById("clocktext");
-			var textNode = document.createTextNode("");
-			textElem.appendChild(textNode);
+            var clocktimedate = document.getElementById("clocktimedate");
+            var clockHM = document.getElementById("clockHM");
+            var clockS = document.getElementById("clockS");
+            var clockAMPM = document.getElementById("clockAMPM");
+            var clockdate = document.getElementById("clockdate");
             
-            var countdown1TextElem = document.getElementById("countdown1text");
-            var countdown1TextTimeElem = document.getElementById("countdown1texttime");
-    
-            var countdown2TextElem = document.getElementById("countdown2text");
-            var countdown2TextTimeElem = document.getElementById("countdown2texttime");
+            var countdown1 = document.getElementById("countdown1");
+            var countdown1_days = document.getElementById("countdown1_days");
+            var countdown1_days_digit = document.getElementById("countdown1_days_digit");
+            var countdown1_hours_digit = document.getElementById("countdown1_hours_digit");
+            var countdown1_minutes_digit = document.getElementById("countdown1_minutes_digit");
+            var countdown1_seconds_digit = document.getElementById("countdown1_seconds_digit");
+            var countdown1_label = document.getElementById("countdown1_label");
             
-			var targetWidth = 0.9;  // Proportion of full screen width
-			var curFontSize = 20;  // Do not change
+            var countdown2 = document.getElementById("countdown2");
+            var countdown2_days = document.getElementById("countdown2_days");
+            var countdown2_days_digit = document.getElementById("countdown2_days_digit");
+            var countdown2_hours_digit = document.getElementById("countdown2_hours_digit");
+            var countdown2_minutes_digit = document.getElementById("countdown2_minutes_digit");
+            var countdown2_seconds_digit = document.getElementById("countdown2_seconds_digit");
+            var countdown2_label = document.getElementById("countdown2_label");
+            
+            var message = document.getElementById("message");
+            
+            const monthNames = ["January", "February", "March", "April", "May", "June",
+                  "July", "August", "September", "October", "November", "December"
+                ];
 			
 			function updateClock() {
 				var d = new Date();
-				var s = "";
-				s += ((d.getHours() + 11) % 12 + 1) + ":";
-				s += (10 > d.getMinutes() ? "0" : "") + d.getMinutes() + ":";
-				s += (10 > d.getSeconds() ? "0" : "") + d.getSeconds() + "\u00A0";
-				s += d.getHours() >= 12 ? "pm" : "am";
-				textNode.data = s;
                 
-                //countdown1 code
+                clockHM.innerHTML = ((d.getHours() + 11) % 12 + 1) + ":" + (10 > d.getMinutes() ? "0" : "") + d.getMinutes();
+                clockS.innerHTML = (10 > d.getSeconds() ? "0" : "") + d.getSeconds();
+                clockAMPM.innerHTML = d.getHours() >= 12 ? "pm" : "am";
+                
+                clockdate.innerHTML = monthNames[d.getMonth()] + " " + d.getDate() + ", " + d.getFullYear();
+                
+                //message
+                if (typeof d_countdown_message != 'undefined')
+                {
+                    if (d_countdown_message !== null)
+                    {
+                        message.innerHTML = d_countdown_message;        
+                    } 
+                }
+                
+                //default times, in case the countdowndata.js file is not present
                 var d_countdown1_targetDay = 0; // Sunday
                 var d_countdown1_countdowntime = "9:00:00 AM";
+                var d_countdown2_targetDay = 0; // Sunday
+                var d_countdown2_countdowntime = "11:00:00 AM";
+                //
                 
+                //countdown1                
                 if (d_countdown1_datetime !== null)
                 {
                     d_countdown1_targetDay = d_countdown1_datetime.getDay();
@@ -89,7 +245,7 @@
                 var d_countdown1_countdowndateObj = new Date(d_countdown1_datestring);
                                 
                 // Find the distance between now and the count down date
-                var d_countdown1_distance = d_countdown1_countdowndateObj - d;
+                var d_countdown1_distance = d_countdown1_countdowndateObj - d + 1000;
 
                 // Time calculations for days, hours, minutes and seconds
                 var d_countdown1_days = Math.floor(d_countdown1_distance / (1000 * 60 * 60 * 24));
@@ -97,12 +253,7 @@
                 var d_countdown1_minutes = Math.floor((d_countdown1_distance % (1000 * 60 * 60)) / (1000 * 60));
                 var d_countdown1_seconds = Math.floor((d_countdown1_distance % (1000 * 60)) / 1000);
                 
-                var d_countdown1_displaystring = (d_countdown1_days > 0 ? d_countdown1_days + "d&nbsp;" : "") + (10 > d_countdown1_hours ? "0" : "") + d_countdown1_hours + ":" + (10 > d_countdown1_minutes ? "0" : "") + d_countdown1_minutes + ":" + (10 > d_countdown1_seconds ? "0" : "") + d_countdown1_seconds + "";
-
-                //countdown2 code
-                var d_countdown2_targetDay = 0; // Sunday
-                var d_countdown2_countdowntime = "11:00:00 AM";
-                
+                //countdown2                
                 if (d_countdown2_datetime !== null)
                 {
                     d_countdown2_targetDay = d_countdown2_datetime.getDay();
@@ -134,7 +285,7 @@
                 var d_countdown2_countdowndateObj= new Date(d_countdown2_datestring);
                                 
                 // Find the distance between now and the count down date
-                var d_countdown2_distance = d_countdown2_countdowndateObj - d;
+                var d_countdown2_distance = d_countdown2_countdowndateObj - d + 1000;
 
                 // Time calculations for days, hours, minutes and seconds
                 var d_countdown2_days = Math.floor(d_countdown2_distance / (1000 * 60 * 60 * 24));
@@ -142,29 +293,50 @@
                 var d_countdown2_minutes = Math.floor((d_countdown2_distance % (1000 * 60 * 60)) / (1000 * 60));
                 var d_countdown2_seconds = Math.floor((d_countdown2_distance % (1000 * 60)) / 1000);
                 
-                var d_countdown2_displaystring = (d_countdown2_days > 0 ? d_countdown2_days + "d&nbsp;" : "") + (10 > d_countdown2_hours ? "0" : "") + d_countdown2_hours + ":" + (10 > d_countdown2_minutes ? "0" : "") + d_countdown2_minutes + ":" + (10 > d_countdown2_seconds ? "0" : "") + d_countdown2_seconds + "";
+                var d_countdown2_displaystring = (d_countdown2_days > 0 ? d_countdown2_days + "d&nbsp;" : "") + (10 > d_countdown2_hours ? "0" : "") + d_countdown2_hours + ":" + (10 > d_countdown2_minutes ? "0" : "") + d_countdown2_minutes + ":" + (10 > (d_countdown2_seconds) ? "0" : "") + (d_countdown2_seconds) + "";
 
                 // Countdown 1 - Display the countdown
                 
                 if (d_countdown1_distance < d_countdown1_publishMillis)
                 {
-                    countdown1TextElem.innerHTML = d_countdown1_displaystring;   
-                    countdown1TextTimeElem.innerHTML = "Begins at: " + d_countdown1_countdowntime;
+                    if (d_countdown1_days > 0)
+                    {
+                        countdown1_days_digit.innerHTML = d_countdown1_days;         
+                    }
+                    else
+                    {
+                        countdown1_days.style.display = "none";
+                        //countdown1_days.style.visibility = "false";
+                    }
+                    
+                    countdown1_hours_digit.innerHTML = (10 > d_countdown1_hours ? "0" : "") + d_countdown1_hours;
+                    countdown1_minutes_digit.innerHTML = (10 > d_countdown1_minutes ? "0" : "") + d_countdown1_minutes;
+                    countdown1_seconds_digit.innerHTML = (10 > (d_countdown1_seconds) ? "0" : "") + d_countdown1_seconds;
+                    countdown1_label.innerHTML = monthNames[d_countdown1_datetime.getMonth()] + " " + d_countdown1_datetime.getDate() + ", " + d_countdown1_datetime.getFullYear() + " " + d_countdown1_countdowntime;
+                }
+                else
+                {
+                    countdown1.style.display = "none";
                 }
                 
                 if (d_countdown1_distance < d_countdown1_expireMillis) // color it red if within our expire threshold
                 {
-                    countdown1TextElem.style.color = "#ff0000";
+                    countdown1_days_digit.style.color = "#e55182";
+                    countdown1_hours_digit.style.color = "#e55182";
+                    countdown1_minutes_digit.style.color = "#e55182";
+                    countdown1_seconds_digit.style.color = "#e55182";
                 }
                 
                 if (d_countdown1_distance < 0)
                 {
-                    countdown1TextElem.innerHTML = "00:00:00";
+                    countdown1_days_digit.innerHTML = "0";
+                    countdown1_hours_digit.innerHTML = "00";
+                    countdown1_minutes_digit.innerHTML = "00";
+                    countdown1_seconds_digit.innerHTML = "00";
                     
                     if (d_countdown1_distance < -30000) // hide the countdown when it's been expired for 30 seconds or more
                     {
-                        countdown1TextElem.innerHTML = "";
-                        countdown1TextTimeElem.innerHTML = "";
+                        countdown1.style.display = "none";
                     }
                 }
                 
@@ -172,23 +344,44 @@
                             
                 if (d_countdown2_distance < d_countdown2_publishMillis)
                 {
-                    countdown2TextElem.innerHTML = d_countdown2_displaystring;
-                    countdown2TextTimeElem.innerHTML = "Begins at: " + d_countdown2_countdowntime;
+                    if (d_countdown2_days > 0)
+                    {
+                        countdown2_days_digit.innerHTML = d_countdown2_days;         
+                    }
+                    else
+                    {
+                        countdown2_days.style.display = "none";
+                        //countdown2_days.style.visibility = "false";
+                    }
+                    
+                    countdown2_hours_digit.innerHTML = (10 > d_countdown2_hours ? "0" : "") + d_countdown2_hours;
+                    countdown2_minutes_digit.innerHTML = (10 > d_countdown2_minutes ? "0" : "") + d_countdown2_minutes;
+                    countdown2_seconds_digit.innerHTML = (10 > (d_countdown2_seconds) ? "0" : "") + d_countdown2_seconds;
+                    countdown2_label.innerHTML = monthNames[d_countdown2_datetime.getMonth()] + " " + d_countdown2_datetime.getDate() + ", " + d_countdown2_datetime.getFullYear() + " " + d_countdown2_countdowntime;
+                }
+                else
+                {
+                    countdown2.style.display = "none";
                 }
                 
                 if (d_countdown2_distance < d_countdown2_expireMillis) // color it red if within our expire threshold
                 {
-                    countdown2TextElem.style.color = "#ff0000";
+                    countdown2_days_digit.style.color = "#e55182";
+                    countdown2_hours_digit.style.color = "#e55182";
+                    countdown2_minutes_digit.style.color = "#e55182";
+                    countdown2_seconds_digit.style.color = "#e55182";
                 }
                 
                 if (d_countdown2_distance < 0)
                 {
-                    countdown2TextElem.innerHTML = "00:00:00";
+                    countdown2_days_digit.innerHTML = "0";
+                    countdown2_hours_digit.innerHTML = "00";
+                    countdown2_minutes_digit.innerHTML = "00";
+                    countdown2_seconds_digit.innerHTML = "00";
                     
                     if (d_countdown2_distance < -30000) // hide the countdown when it's been expired for 30 seconds or more
                     {
-                        countdown2TextElem.innerHTML = "";
-                        countdown2TextTimeElem.innerHTML = "";
+                        countdown2.style.display = "none";
                     }
                 }
                 
@@ -197,12 +390,10 @@
 			
 			function updateTextSize() {
 				for (var i = 0; 3 > i; i++) {  // Iterate for better better convergence
-					curFontSize *= targetWidth / (textElem.offsetWidth / textElem.parentNode.offsetWidth);
-					textElem.style.fontSize = curFontSize + "pt";
-                    countdown1TextElem.style.fontSize = curFontSize-2 + "pt";
-                    countdown1TextTimeElem.style.fontSize = curFontSize/3 + "pt";
-                    countdown2TextElem.style.fontSize = curFontSize-2 + "pt";
-                    countdown2TextTimeElem.style.fontSize = curFontSize/3 + "pt";
+                    //countdown1TextElem.style.fontSize = curFontSize/2 + "pt";
+                    //countdown1TextTimeElem.style.fontSize = curFontSize/3 + "pt";
+                    //countdown2TextElem.style.fontSize = curFontSize/2 + "pt";
+                    //countdown2TextTimeElem.style.fontSize = curFontSize/3 + "pt";
 				}
 			}
 			

@@ -14,6 +14,18 @@
          var countdown2_time = params.getValue("Countdown2_Time", 0);
          var countdown2_publishTime = params.getValue("Countdown2_PublishTime", 0);
          var countdown2_expireTime = params.getValue("Countdown2_ExpireTime", 0);
+
+         var countdown_message = params.getValue("CountdownMessage", 0);
+         countdown_message = countdown_message.replace("'", "");
+
+         if (countdown_message == "")
+         {
+            countdown_message = "null";
+         }
+         else
+         {
+            countdown_message = "'" + countdown_message + "'";
+         }
          
          var data = "";
          data += "var d_countdown1_datetime = new Date('" + countdown1_date + " " + countdown1_time + "');";
@@ -21,13 +33,16 @@
          data += "var d_countdown1_publishMinutes = " + countdown1_publishTime + ";";
          data += "\n";
          data += "var d_countdown1_expireMinutes = " + countdown1_expireTime + ";";
-         data += "\n";
+         data += "\n\n";
          data += "var d_countdown2_datetime = new Date('" + countdown2_date + " " + countdown2_time + "');";
          data += "\n";
          data += "var d_countdown2_publishMinutes = " + countdown2_publishTime + ";";
          data += "\n";
          data += "var d_countdown2_expireMinutes = " + countdown2_expireTime + ";";
+         data += "\n\n";
+         data += "var d_countdown_message = " + countdown_message + ";";
          ogscript.saveToFile(path, data, true);
+         //ogscript.debug(data);
       }</api>
       <params>
          <param access="1" maxlength="0" name="Countdown 1 Date" oid="Countdown1_Date" type="STRING" value="Jun 24, 2018" widget="date-picker-string"/>
@@ -74,6 +89,7 @@
             <constraint key="5">5 minutes</constraint>
             <constraint key="10">10 minutes</constraint>
          </param>
+         <param access="1" maxlength="0" name="Countdown Message" oid="CountdownMessage" stateless="true" type="STRING" value="" widget="multiline-text"/>
       </params>
       <ogscript handles="onload" id="tbCountdowns" name="onload" targetid="topLevel">ogscript.debug('Countdowns Panel loaded.');</ogscript>
    </meta>
@@ -99,6 +115,12 @@
    <label height="30" id="lblCountdown2ExpireLabel" left="44" name="Expires:" top="325" width="100"/>
    <param expand="true" height="30" left="100" oid="Countdown2_ExpireTime" showlabel="false" style="size:Normal" top="325" width="130"/>
    <label height="30" id="lblCountdown2ExpiresDescription" left="240" name="When the countdown should highlight red, in minutes." top="325" width="370"/>
+   <label height="30" id="lblCountdownsMessage" left="305" name="Message:" top="14" width="100"/>
+   <param expand="true" height="45" left="375" oid="CountdownMessage" showlabel="false" style="size:Normal;" top="17" width="250"/>
+   <label height="30" id="lblCountdownMessageDescription" left="375" name="&lt;html&gt;Add a short message to the countdown screen.&lt;/html&gt;" top="65" width="250"/>
+   <button buttontype="push" height="36" id="btnClearCountdownMessage" left="631" name="x" top="20" width="30">
+      <task tasktype="ogscript">params.setValue('CountdownMessage', 0, '');</task>
+   </button>
    <button buttontype="push" height="40" id="btnCountdownsUpdate" left="60" name="Update" style="size:Normal;bg#999999;" top="370" width="170">
       <task tasktype="ogscript">updateCountdowns();</task>
    </button>
