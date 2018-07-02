@@ -42,7 +42,7 @@
          color:#7BB861
         }
         #clockS {
-         top:12%;
+         top:10%;
          position:absolute;
          font-size:45%
         }
@@ -50,7 +50,7 @@
         {
             position:absolute;
             font-size:33%;
-            top:19%;
+            top:17%;
             color:#908686;
         }
             
@@ -97,6 +97,22 @@
                 text-align:left;
                     color:#908686;
             }
+            
+            .expired {
+              animation: blinker 1s linear infinite;
+             font-size:180px;
+             padding:5px 30px;
+             background:#38414a;
+             background:rgba(40,50,61,.62);
+             font-family:sans-serif;
+             font-weight:300
+            }
+
+            @keyframes blinker {
+              50% {
+                opacity: 0;
+              }
+            }
 
             #message {
                 position:absolute;
@@ -105,12 +121,29 @@
                 right:20%;
                 font-size:5vw;
             }
+            
+            #refreshBar {
+                width: 200px;
+                position: absolute;
+                z-index: 3;
+                right: 40px;
+                top: 40px;
+                background-color: #908686;
+            }
+            #progressBar {
+                width: 1%;
+                -webkit-transition: width 1s;
+                height: 15px;
+                background-color: #7BB861;
+            }
 		</style>
         <script type="text/javascript" src="countdowndata.js"></script>
-	</head>
-	
+    </head>
 	<body>
         <div id="clocktimedate">
+        <div id="refreshBar">
+            <div id="progressBar"></div>
+        </div>
             <div id="clockdate"></div>
             <div id="clocktime">
                 <span id="clockHM"></span>
@@ -213,7 +246,7 @@
                 var d_countdown2_countdowntime = "11:00:00 AM";
                 //
                 
-                //countdown1                
+                //countdown1      
                 if (d_countdown1_datetime !== null)
                 {
                     d_countdown1_targetDay = d_countdown1_datetime.getDay();
@@ -225,7 +258,7 @@
                 }
                 
                 var d_countdown1_publishMillis = (1000 * 60) * d_countdown1_publishMinutes; // the publish time but in milliseconds                
-                var d_countdown1_expireMillis = (1000 * 60) * d_countdown1_expireMinutes; // the expiration but in milliseconds
+                var d_countdown1_expireMillis = (1000) * d_countdown1_expireSeconds; // the expiration but in milliseconds
                 
                 var d_countdown1_currentDay = d.getDay();
                 var d_countdown1_daysLeft = 0;
@@ -265,7 +298,7 @@
                 }
                 
                 var d_countdown2_publishMillis = (1000 * 60) * d_countdown2_publishMinutes; // the publish time but in milliseconds                
-                var d_countdown2_expireMillis = (1000 * 60) * d_countdown2_expireMinutes; // the expiration but in milliseconds
+                var d_countdown2_expireMillis = (1000) * d_countdown2_expireSeconds; // the expiration but in milliseconds
                 
                 var d_countdown2_currentDay = d.getDay();
                 var d_countdown2_daysLeft = 0;
@@ -312,7 +345,12 @@
                     countdown1_hours_digit.innerHTML = (10 > d_countdown1_hours ? "0" : "") + d_countdown1_hours;
                     countdown1_minutes_digit.innerHTML = (10 > d_countdown1_minutes ? "0" : "") + d_countdown1_minutes;
                     countdown1_seconds_digit.innerHTML = (10 > (d_countdown1_seconds) ? "0" : "") + d_countdown1_seconds;
-                    countdown1_label.innerHTML = monthNames[d_countdown1_datetime.getMonth()] + " " + d_countdown1_datetime.getDate() + ", " + d_countdown1_datetime.getFullYear() + " " + d_countdown1_countdowntime;
+                    let countdown1_labelString = monthNames[d_countdown1_datetime.getMonth()] + " " + d_countdown1_datetime.getDate() + ", " + d_countdown1_datetime.getFullYear() + " " + d_countdown1_countdowntime;
+                    if (d_countdown1_title !== "")
+                    {
+                        countdown1_labelString += "&nbsp;&nbsp;&nbsp;" + d_countdown1_title;        
+                    }
+                    countdown1_label.innerHTML = countdown1_labelString;
                 }
                 else
                 {
@@ -333,6 +371,11 @@
                     countdown1_hours_digit.innerHTML = "00";
                     countdown1_minutes_digit.innerHTML = "00";
                     countdown1_seconds_digit.innerHTML = "00";
+                    
+                    countdown1_days_digit.className = "expired";
+                    countdown1_hours_digit.className = "expired";
+                    countdown1_minutes_digit.className = "expired";
+                    countdown1_seconds_digit.className = "expired";
                     
                     if (d_countdown1_distance < -30000) // hide the countdown when it's been expired for 30 seconds or more
                     {
@@ -357,7 +400,12 @@
                     countdown2_hours_digit.innerHTML = (10 > d_countdown2_hours ? "0" : "") + d_countdown2_hours;
                     countdown2_minutes_digit.innerHTML = (10 > d_countdown2_minutes ? "0" : "") + d_countdown2_minutes;
                     countdown2_seconds_digit.innerHTML = (10 > (d_countdown2_seconds) ? "0" : "") + d_countdown2_seconds;
-                    countdown2_label.innerHTML = monthNames[d_countdown2_datetime.getMonth()] + " " + d_countdown2_datetime.getDate() + ", " + d_countdown2_datetime.getFullYear() + " " + d_countdown2_countdowntime;
+                    let countdown2_labelString = monthNames[d_countdown2_datetime.getMonth()] + " " + d_countdown2_datetime.getDate() + ", " + d_countdown2_datetime.getFullYear() + " " + d_countdown2_countdowntime;
+                    if (d_countdown2_title !== "")
+                    {
+                        countdown2_labelString += "&nbsp;&nbsp;&nbsp;" + d_countdown2_title;        
+                    }
+                    countdown2_label.innerHTML = countdown2_labelString;
                 }
                 else
                 {
@@ -379,6 +427,11 @@
                     countdown2_minutes_digit.innerHTML = "00";
                     countdown2_seconds_digit.innerHTML = "00";
                     
+                    countdown2_days_digit.className = "expired";
+                    countdown2_hours_digit.className = "expired";
+                    countdown2_minutes_digit.className = "expired";
+                    countdown2_seconds_digit.className = "expired";
+                    
                     if (d_countdown2_distance < -30000) // hide the countdown when it's been expired for 30 seconds or more
                     {
                         countdown2.style.display = "none";
@@ -387,19 +440,29 @@
                 
 				setTimeout(updateClock, 1000 - d.getTime() % 1000 + 20);
 			}
-			
-			function updateTextSize() {
-				for (var i = 0; 3 > i; i++) {  // Iterate for better better convergence
-                    //countdown1TextElem.style.fontSize = curFontSize/2 + "pt";
-                    //countdown1TextTimeElem.style.fontSize = curFontSize/3 + "pt";
-                    //countdown2TextElem.style.fontSize = curFontSize/2 + "pt";
-                    //countdown2TextTimeElem.style.fontSize = curFontSize/3 + "pt";
-				}
-			}
+            
+            function updateRefreshBar()
+            {
+                let progressBar = document.getElementById("progressBar");
+                let width = 1;
+                var id = setInterval(frame, 1000);
+                function frame()
+                {
+                    if (width >= 15)
+                    {
+                        clearInterval(id);
+                    }
+                    else
+                    {
+                        width++;
+                        let progressWidth = (width / 15) * 100;
+                        progressBar.style.width = progressWidth + '%';
+                    }
+                }
+            }
 			
 			updateClock();
-			updateTextSize();
-			window.addEventListener("resize", updateTextSize);
+            updateRefreshBar();
 		</script>
 	</body>
 </html>
