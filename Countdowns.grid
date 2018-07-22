@@ -19,6 +19,7 @@
 
          var countdown_message = params.getValue("CountdownMessage", 0);
          countdown_message = countdown_message.replace("'", "");
+         countdown_message = countdown_message.replace("\n", "\\n");
 
          if (countdown_message == "")
          {

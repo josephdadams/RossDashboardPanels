@@ -235,21 +235,13 @@
                 {
                     if (d_countdown_message !== null)
                     {
-                        message.innerHTML = d_countdown_message;        
+                        message.innerHTML = d_countdown_message.replace("\n","<br />");        
                     } 
                 }
-                
-                //default times, in case the countdowndata.js file is not present
-                var d_countdown1_targetDay = 0; // Sunday
-                var d_countdown1_countdowntime = "9:00:00 AM";
-                var d_countdown2_targetDay = 0; // Sunday
-                var d_countdown2_countdowntime = "11:00:00 AM";
-                //
-                
+                                
                 //countdown1      
                 if (d_countdown1_datetime !== null)
                 {
-                    d_countdown1_targetDay = d_countdown1_datetime.getDay();
                     d_countdown1_countdowntime = "";
 				    d_countdown1_countdowntime += ((d_countdown1_datetime.getHours() + 11) % 12 + 1) + ":";
 				    d_countdown1_countdowntime += (10 > d_countdown1_datetime.getMinutes() ? "0" : "") + d_countdown1_datetime.getMinutes() + ":";
@@ -259,26 +251,9 @@
                 
                 var d_countdown1_publishMillis = (1000 * 60) * d_countdown1_publishMinutes; // the publish time but in milliseconds                
                 var d_countdown1_expireMillis = (1000) * d_countdown1_expireSeconds; // the expiration but in milliseconds
-                
-                var d_countdown1_currentDay = d.getDay();
-                var d_countdown1_daysLeft = 0;
-                if (d_countdown1_currentDay > d_countdown1_targetDay) // if we missed the target day, figure out how many days until the next one
-                {
-                    d_countdown1_daysLeft = (7 - d_countdown1_currentDay) + d_countdown1_targetDay;
-                }
-                else if (d_countdown1_currentDay < d_countdown1_targetDay)
-                {
-                    d_countdown1_daysLeft = d_countdown1_targetDay - d_countdown1_currentDay;
-                }
-                
-                var d_countdown1_daysLeft_millis = (24 * 60 * 60 * 1000) * d_countdown1_daysLeft;
-                var d_countdown1_actualdate = new Date(d.getTime() + d_countdown1_daysLeft_millis);
-                
-                var d_countdown1_datestring = (d_countdown1_actualdate.getMonth()+1) + "/" + d_countdown1_actualdate.getDate() + "/" + d_countdown1_actualdate.getFullYear() + " " + d_countdown1_countdowntime;
-                var d_countdown1_countdowndateObj = new Date(d_countdown1_datestring);
                                 
                 // Find the distance between now and the count down date
-                var d_countdown1_distance = d_countdown1_countdowndateObj - d + 1000;
+                var d_countdown1_distance =  d_countdown1_datetime - d + 1000;
 
                 // Time calculations for days, hours, minutes and seconds
                 var d_countdown1_days = Math.floor(d_countdown1_distance / (1000 * 60 * 60 * 24));
@@ -289,7 +264,6 @@
                 //countdown2                
                 if (d_countdown2_datetime !== null)
                 {
-                    d_countdown2_targetDay = d_countdown2_datetime.getDay();
                     d_countdown2_countdowntime = "";
 				    d_countdown2_countdowntime += ((d_countdown2_datetime.getHours() + 11) % 12 + 1) + ":";
 				    d_countdown2_countdowntime += (10 > d_countdown2_datetime.getMinutes() ? "0" : "") + d_countdown2_datetime.getMinutes() + ":";
@@ -299,26 +273,9 @@
                 
                 var d_countdown2_publishMillis = (1000 * 60) * d_countdown2_publishMinutes; // the publish time but in milliseconds                
                 var d_countdown2_expireMillis = (1000) * d_countdown2_expireSeconds; // the expiration but in milliseconds
-                
-                var d_countdown2_currentDay = d.getDay();
-                var d_countdown2_daysLeft = 0;
-                if (d_countdown2_currentDay > d_countdown2_targetDay) // if we missed the target day, figure out how many days until the next one
-                {
-                    d_countdown2_daysLeft = (7 - d_countdown2_currentDay) + d_countdown2_targetDay;
-                }
-                else if (d_countdown2_currentDay < d_countdown2_targetDay)
-                {
-                    d_countdown2_daysLeft = d_countdown2_targetDay - d_countdown2_currentDay;
-                }
-                                
-                var d_countdown2_daysLeft_millis = (24 * 60 * 60 * 1000) * d_countdown2_daysLeft;
-                var d_countdown2_actualdate = new Date(d.getTime() + d_countdown2_daysLeft_millis);
-                
-                var d_countdown2_datestring = (d_countdown2_actualdate.getMonth()+1) + "/" + d_countdown2_actualdate.getDate() + "/" + d_countdown2_actualdate.getFullYear() + " " + d_countdown2_countdowntime;
-                var d_countdown2_countdowndateObj= new Date(d_countdown2_datestring);
                                 
                 // Find the distance between now and the count down date
-                var d_countdown2_distance = d_countdown2_countdowndateObj - d + 1000;
+                var d_countdown2_distance =  d_countdown2_datetime - d + 1000;
 
                 // Time calculations for days, hours, minutes and seconds
                 var d_countdown2_days = Math.floor(d_countdown2_distance / (1000 * 60 * 60 * 24));
@@ -367,20 +324,28 @@
                 
                 if (d_countdown1_distance < 0)
                 {
-                    countdown1_days_digit.innerHTML = "0";
-                    countdown1_hours_digit.innerHTML = "00";
-                    countdown1_minutes_digit.innerHTML = "00";
-                    countdown1_seconds_digit.innerHTML = "00";
-                    
-                    countdown1_days_digit.className = "expired";
-                    countdown1_hours_digit.className = "expired";
-                    countdown1_minutes_digit.className = "expired";
-                    countdown1_seconds_digit.className = "expired";
-                    
-                    if (d_countdown1_distance < -30000) // hide the countdown when it's been expired for 30 seconds or more
+                    if (d_countdown1_publishMillis === 0)
                     {
-                        countdown1.style.display = "none";
+                        countdown1.style.display = "none";        
                     }
+                    else
+                    {
+                        countdown1_days_digit.innerHTML = "0";
+                        countdown1_hours_digit.innerHTML = "00";
+                        countdown1_minutes_digit.innerHTML = "00";
+                        countdown1_seconds_digit.innerHTML = "00";
+
+                        countdown1_days_digit.className = "expired";
+                        countdown1_hours_digit.className = "expired";
+                        countdown1_minutes_digit.className = "expired";
+                        countdown1_seconds_digit.className = "expired";
+
+                        if (d_countdown1_distance < -30000) // hide the countdown when it's been expired for 30 seconds or more
+                        {
+                            countdown1.style.display = "none";
+                        }
+                    }
+
                 }
                 
                 // Countdown 2 - Display the countdown
@@ -422,19 +387,26 @@
                 
                 if (d_countdown2_distance < 0)
                 {
-                    countdown2_days_digit.innerHTML = "0";
-                    countdown2_hours_digit.innerHTML = "00";
-                    countdown2_minutes_digit.innerHTML = "00";
-                    countdown2_seconds_digit.innerHTML = "00";
-                    
-                    countdown2_days_digit.className = "expired";
-                    countdown2_hours_digit.className = "expired";
-                    countdown2_minutes_digit.className = "expired";
-                    countdown2_seconds_digit.className = "expired";
-                    
-                    if (d_countdown2_distance < -30000) // hide the countdown when it's been expired for 30 seconds or more
+                    if (d_countdown2_publishMillis === 0)
                     {
-                        countdown2.style.display = "none";
+                        countdown2.style.display = "none";        
+                    }
+                    else
+                    {
+                        countdown2_days_digit.innerHTML = "0";
+                        countdown2_hours_digit.innerHTML = "00";
+                        countdown2_minutes_digit.innerHTML = "00";
+                        countdown2_seconds_digit.innerHTML = "00";
+
+                        countdown2_days_digit.className = "expired";
+                        countdown2_hours_digit.className = "expired";
+                        countdown2_minutes_digit.className = "expired";
+                        countdown2_seconds_digit.className = "expired";
+
+                        if (d_countdown2_distance < -30000) // hide the countdown when it's been expired for 30 seconds or more
+                        {
+                            countdown2.style.display = "none";
+                        }
                     }
                 }
                 
