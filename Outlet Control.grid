@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?><abs contexttype="opengear" id="topLevel" name="OutletControl">
+   <meta>
+      <api>function tellOutlet(address, port, protocol, command)
+      {
+         var enabled = ogscript.getObject('outletEnabled');
+
+         if (enabled)
+         {
+            switch(protocol)
+            {
+               case "TPLINK-HS100":
+                  var payload_on_hex = "0000002AD0F281F88BFF9AF7D5EF94B6C5A0D48BF99CF091E8B7C4B0D1A5C0E2D8A381F286E793F6D4EEDFA2DFA2";
+                  var payload_off_hex = "0000002AD0F281F88BFF9AF7D5EF94B6C5A0D48BF99CF091E8B7C4B0D1A5C0E2D8A381F286E793F6D4EEDEA3DEA3";
+                  
+                  var sendCommand = "";
+                  
+                  if (command == "on")
+                  {
+                     sendCommand = payload_on_hex;
+                  }
+                  else if (command == "off")
+                  {
+                     sendCommand = payload_off_hex;
+                  }
+                                 
+                  rosstalk.sendAsBytes(address, port, sendCommand, callback);
+                  ogscript.debug("Outlet turned " + command + ".");
+                  break;
+               default:
+                  break;
+            }
+         }
+      }
+      
+      function callback(success, sentData, resultString, exception)
+      {
+      }</api>
+      <params>
+         <param access="1" maxlength="0" name="Outlet_Address" oid="Outlet.Address" stateless="true" type="STRING" value="192.168.2.1" widget="default"/>
+         <param access="1" maxlength="0" name="Outlet_Port" oid="Outlet.Port" stateless="true" type="STRING" value="9999" widget="default"/>
+         <param access="1" constraintstrict="true" constrainttype="STRING_STRING_CHOICE" maxlength="0" name="Outlet_Protocol" oid="Outlet.Protocol" stateless="true" type="STRING" value="" widget="combo">
+            <constraint key="TPLINK-HS100">TP-Link HS100/101</constraint>
+         </param>
+      </params>
+      <lookup id="hosts">
+         <entry key="Outlet.Address">192.168.2.1</entry>
+         <entry key="Outlet.Port">9999</entry>
+         <entry key="Outlet.Protocol">TPLINK-HS100</entry>
+      </lookup>
+      <ogscript handles="onload" id="tbSetup" name="onload" targetid="topLevel">params.setValue('Outlet.Address', 0, ogscript.getPrivateString('hosts', 'Outlet.Address'));
+         params.setValue('Outlet.Port', 0, ogscript.getPrivateString('hosts', 'Outlet.Port'));
+         params.setValue('Outlet.Protocol', 0, ogscript.getPrivateString('hosts', 'Outlet.Protocol'));</ogscript>
+      <ogscript handles="onload" id="tbProduction" name="onload" targetid="topLevel">ogscript.setStyle('btnOutlet_On', 'bg#cccccc');
+      ogscript.setStyle('btnOutlet_Off', 'bg#cccccc');
+      ogscript.putObject('outletEnabled', false);</ogscript>
+   </meta>
+   <label height="40" left="40" name="Outlet Control" style="txt-align:west;size:Big;" top="12" width="200"/>
+   <tab height="233" id="theControl" left="33" top="55" width="376">
+      <abs id="tbProduction" name="Production">
+         <button buttontype="push" gpi="outlet_on" height="80" id="btnOutlet_On" left="50" name="&lt;html&gt;&lt;center&gt;Turn Outlet On&lt;/center&gt;&lt;/html&gt;" style="size:Normal;bg#009633;" top="50" width="100">
+            <task tasktype="ogscript">tellOutlet(ogscript.getPrivateString('hosts', 'Outlet.Address'), ogscript.getPrivateString('hosts', 'Outlet.Port'), ogscript.getPrivateString('hosts', 'Outlet.Protocol'), "on");</task>
+         </button>
+         <button buttontype="push" gpi="outlet_off" height="80" id="btnOutlet_Off" left="225" name="&lt;html&gt;&lt;center&gt;Turn Outlet Off&lt;/center&gt;&lt;/html&gt;" style="size:Normal;bg#990019;" top="50" width="100">
+            <task tasktype="ogscript">tellOutlet(ogscript.getPrivateString('hosts', 'Outlet.Address'), ogscript.getPrivateString('hosts', 'Outlet.Port'), ogscript.getPrivateString('hosts', 'Outlet.Protocol'), "off");</task>
+         </button>
+      </abs>
+      <abs id="tbSetup" name="Setup">
+         <label height="47" left="5" name="Outlet Settings" style="size:Big;" top="-7" width="217"/>
+         <label height="20" left="10" name="IP Address:" top="40" width="80"/>
+         <param height="30" left="90" oid="Outlet.Address" top="35" width="150"/>
+         <label height="20" left="250" name="Port:" top="40" width="50"/>
+         <param height="30" left="290" oid="Outlet.Port" top="35" width="50"/>
+         <label height="41" left="9" name="Protocol:" top="76" width="99"/>
+         <param expand="true" height="34" left="90" oid="Outlet.Protocol" top="80" width="200"/>
+         <button buttontype="push" fill="both" height="50" left="5" name="Save Changes" top="140" width="350">
+            <task tasktype="ogscript">ogscript.putPrivateString('hosts', 'Outlet.Address', params.getValue('Outlet.Address',0));
+               ogscript.putPrivateString('hosts', 'Outlet.Port', params.getValue('Outlet.Port',0));
+               ogscript.putPrivateString('hosts', 'Outlet.Protocol', params.getValue('Outlet.Protocol',0));
+               ogscript.debug(params.getValue('Outlet.Protocol',0));
+               ogscript.setStyle('btnOutlet_On', 'bg#009633');
+               ogscript.setStyle('btnOutlet_Off', 'bg#990019');
+               ogscript.putObject('outletEnabled', true);
+               ogscript.debug("Outlet Settings Saved.");</task>
+         </button>
+      </abs>
+   </tab>
+</abs>
