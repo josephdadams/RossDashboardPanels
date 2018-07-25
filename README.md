@@ -13,5 +13,5 @@ You can control your Blackmagic VideoHub router with this panel. Supports loadin
 # Countdowns.grid
 Using the accompanying clock.html file, you can run some basic countdowns with this panel. The clock.html file should be in a subfolder called "clock".
 
-#Outlet Control.grid
+# Outlet Control.grid
 Use this panel to send a TCP message to turn on or off a network-based power outlet. Currently supports TP-Link HS100/101 models.
