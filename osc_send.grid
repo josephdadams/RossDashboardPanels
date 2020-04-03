@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><abs contexttype="opengear" id="_top" style="">
+   <meta>
+      <api>function createOSCMessage(cmd, val, varType)
+   {
+      var messageBuilder = ogscript.createMessageBuilder();
+      var len = cmd.length+1;
+      var pad = (4 - len%4)%4;
+      var cmdLen = len+pad; // must be integer multiple of 4
+      //ogscript.debug ("length: " + len + " pad: " + pad + " = " + cmdLen);
+      messageBuilder.writeString(cmd);      
+      
+      // put null terminator at end of command string
+      messageBuilder.writeChar(0); // null terminator
+      
+      // pad end of command string with nulls
+      for (var i=0; i&lt;pad; ++i) 
+      {
+         messageBuilder.writeChar(0);
+      }
+        
+      // set the 4 bytes that identify the format
+      messageBuilder.writeChar(',');
+
+      if (varType == 'float')
+      {
+         messageBuilder.writeChar('f');
+		   messageBuilder.writeChar(0);
+         messageBuilder.writeChar(0);
+		   messageBuilder.writeFloat(val);
+      }
+      else if (varType == 'int')
+      {
+         messageBuilder.writeChar('i');
+		   messageBuilder.writeChar(0);
+         messageBuilder.writeChar(0);
+		   messageBuilder.writeInt(val);
+      }
+	  else
+	  {
+	  	   messageBuilder.writeChar('s');
+		   messageBuilder.writeChar(0);
+         messageBuilder.writeChar(0);
+		   messageBuilder.writeString(val);
+	  }
+   
+      return messageBuilder.toByteArray();
+}
+
+function sendOSCMessageFloat(ip, port, cmd, val)
+{
+   ogscript.sendUDPBytes(ip, port, createOSCMessage(cmd, val, 'float'));
+   ogscript.debug('OSC Float Sent');
+}
+
+function sendOSCMessageInt(ip, port, cmd, val)
+{
+   ogscript.sendUDPBytes(ip, port, createOSCMessage(cmd, val, 'int'));
+   ogscript.debug('OSC Int Sent');
+}
+
+function sendOSCMessageString(ip, port, cmd, val)
+{
+   ogscript.sendUDPBytes(ip, port, createOSCMessage(cmd, val, 'string'));
+   ogscript.debug('OSC String Sent');
+}</api>
+   </meta>
+   <button buttontype="push" height="90" left="35" name="OSC Test" top="104" width="298">
+      <task tasktype="ogscript">var host = '127.0.0.1';
+		var port = '12321';
+		var oscCommand = '/style/text/1/2';
+		var oscString = 'TEST';
+		sendOSCMessageString(host, port, oscCommand, oscString);</task>
+   </button>
+</abs>
