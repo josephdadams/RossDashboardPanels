@@ -1,0 +1,626 @@
+<?xml version="1.0" encoding="UTF-8"?><abs contexttype="opengear" gridaspect="true" gridheight="285" gridwidth="1920" keepalive="false" touch="true" virtualheight="261" virtualwidth="1759">
+   <meta>
+      <params>
+         <param access="1" maxlength="0" name="Companion.DeviceID" oid="Companion.DeviceID" type="STRING" value="5COZ9eAHTeEjFMYjJoKRdo" widget="text"/>
+         <param access="1" maxlength="0" name="Companion.IP" oid="Companion.IP" type="STRING" value="127.0.0.1" widget="text"/>
+         <param access="1" constrainttype="INT_NULL" name="Companion Satellite Port" oid="Companion.Port" precision="0" type="INT16" value="16622" widget="default"/>
+         <param access="1" constrainttype="INT_NULL" name="Companion Satellite Port" oid="Companion.KeysTotal" precision="0" type="INT16" value="40" widget="default"/>
+         <param access="1" constrainttype="INT_NULL" name="Companion Satellite Port" oid="Companion.KeysPerRow" precision="0" type="INT16" value="20" widget="default"/>
+         <param access="1" constrainttype="INT_CHOICE" name="Companion.Bitmaps" oid="Companion.Bitmaps" precision="0" type="INT32" value="1" widget="checkbox">
+            <constraint key="0">Off</constraint>
+            <constraint key="1">On</constraint>
+         </param>
+         <param access="1" constrainttype="INT_NULL" name="Button Size" oid="Companion.ButtonSize" precision="0" type="INT16" value="72" widget="default"/>
+      </params>
+      <api name="Functions">function base64ToAscii(base64String) {
+    var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    var result = "";
+    var buffer = 0;
+    var bitsCollected = 0;
+
+    if (base64String == undefined) {
+      return result;
+      }
+
+    for (var i = 0; i &lt; base64String.length(); i++) {
+         var char = base64String.substring(i, i + 1);
+
+        if (char == "=") {
+         break; // Padding character, ignore
+        }
+        
+        var value = chars.indexOf(char);
+        if (value == -1) {
+         ogscript.debug("Invalid Base64 character");
+         return;
+        }
+
+        buffer = (buffer &lt;&lt; 6) | value;
+        bitsCollected += 6;
+
+        // If we have collected at least 8 bits, extract the top byte
+        while (bitsCollected &gt;= 8) { // Ensure multiple bytes can be extracted if available
+            bitsCollected -= 8;
+            var byte = (buffer &gt;&gt; bitsCollected) &amp; 0xFF; // Extract the top 8 bits
+            result += String.fromCharCode(byte);
+        }
+    }
+
+    return result;
+}
+
+function base64ToByteArray(base64String) {
+    // Define the base64 characters
+    var chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+
+    // Initialize variables
+    var i = 0, len = base64String.length, bin = '', byteArray;
+
+    // Convert base64 string to binary string
+    while (i &lt; len) {
+        var c1 = chars.indexOf(base64String.charAt(i++));
+        var c2 = chars.indexOf(base64String.charAt(i++));
+        var c3 = chars.indexOf(base64String.charAt(i++));
+        var c4 = chars.indexOf(base64String.charAt(i++));
+
+        var triple = (c1 &lt;&lt; 18) | (c2 &lt;&lt; 12) | (c3 &lt;&lt; 6) | c4;
+        bin += String.fromCharCode((triple &gt;&gt; 16) &amp; 0xFF);
+        if (c3 !== 64) bin += String.fromCharCode((triple &gt;&gt; 8) &amp; 0xFF);
+        if (c4 !== 64) bin += String.fromCharCode(triple &amp; 0xFF);
+    }
+
+    // Create the byte array using ogscript function
+    byteArray = ogscript.createByteArray(bin.length);
+
+    // Fill the byte array
+    for (var j = 0; j &lt; bin.length; j++) {
+        var byteValue = bin.charCodeAt(j);
+        // Convert values greater than 127 to signed byte equivalents
+        byteArray[j] = (byteValue &lt;= 127 ? byteValue : byteValue - 256);
+    }
+
+    return byteArray;
+}
+function saveRGBAsBMP(base64String, filePath, width, height) {
+    // Decode Base64 string to binary data
+    var bytes = base64ToByteArray(base64String);
+
+    // Verify data length
+    var expectedSize = width * height * 3; // 3 bytes per pixel (RGB)
+    if (bytes.length !== expectedSize) {
+        ogscript.debug('Data size mismatch. Expected ' + expectedSize + ', got ' + bytes.length);
+        return false;
+    }
+
+    // Flip the image data vertically and convert to BGR
+    var rowSize = width * 3; // 3 bytes per pixel (BGR)
+    var flippedBytes = ogscript.createByteArray(bytes.length);
+
+    for (var y = 0; y &lt; height; y++) {
+        var srcRowStart = (height - 1 - y) * rowSize; // Source row (flipped vertically)
+        var destRowStart = y * rowSize; // Destination row
+        for (var x = 0; x &lt; rowSize; x += 3) {
+            var srcPixelStart = srcRowStart + x; // Source pixel start
+            var destPixelStart = destRowStart + x; // Destination pixel start (no horizontal flip)
+
+            // Copy and rearrange color channels to BGR
+            flippedBytes[destPixelStart] = bytes[srcPixelStart + 2];     // Blue
+            flippedBytes[destPixelStart + 1] = bytes[srcPixelStart + 1]; // Green
+            flippedBytes[destPixelStart + 2] = bytes[srcPixelStart];     // Red
+        }
+    }
+
+    // BMP Header (54 bytes)
+    var headerSize = 54;
+    var fileSize = headerSize + flippedBytes.length;
+
+    var header = ogscript.createByteArray(headerSize);
+
+    // BMP Header Fields
+    header[0] = 0x42; // 'B'
+    header[1] = 0x4D; // 'M'
+    header[2] = (fileSize &amp; 0xff) - ((fileSize &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[3] = ((fileSize &gt;&gt; 8) &amp; 0xff) - (((fileSize &gt;&gt; 8) &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[4] = ((fileSize &gt;&gt; 16) &amp; 0xff) - (((fileSize &gt;&gt; 16) &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[5] = ((fileSize &gt;&gt; 24) &amp; 0xff) - (((fileSize &gt;&gt; 24) &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[6] = 0x00; // Reserved
+    header[7] = 0x00;
+    header[8] = 0x00; // Reserved
+    header[9] = 0x00;
+    header[10] = headerSize; // Offset to pixel data
+    header[11] = 0x00;
+    header[12] = 0x00;
+    header[13] = 0x00;
+
+    // DIB Header Fields
+    header[14] = 0x28; // DIB header size (40 bytes)
+    header[15] = 0x00;
+    header[16] = 0x00;
+    header[17] = 0x00;
+    header[18] = (width &amp; 0xff) - ((width &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[19] = ((width &gt;&gt; 8) &amp; 0xff) - (((width &gt;&gt; 8) &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[20] = ((width &gt;&gt; 16) &amp; 0xff) - (((width &gt;&gt; 16) &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[21] = ((width &gt;&gt; 24) &amp; 0xff) - (((width &gt;&gt; 24) &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[22] = (height &amp; 0xff) - ((height &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[23] = ((height &gt;&gt; 8) &amp; 0xff) - (((height &gt;&gt; 8) &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[24] = ((height &gt;&gt; 16) &amp; 0xff) - (((height &gt;&gt; 16) &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[25] = ((height &gt;&gt; 24) &amp; 0xff) - (((height &gt;&gt; 24) &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[26] = 0x01; // Planes (always 1)
+    header[27] = 0x00;
+    header[28] = 0x18; // Bits per pixel (24-bit RGB)
+    header[29] = 0x00;
+    header[30] = 0x00; // Compression (0 = none)
+    header[31] = 0x00;
+    header[32] = 0x00;
+    header[33] = 0x00;
+    header[34] = (flippedBytes.length &amp; 0xff) - ((flippedBytes.length &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[35] = ((flippedBytes.length &gt;&gt; 8) &amp; 0xff) - (((flippedBytes.length &gt;&gt; 8) &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[36] = ((flippedBytes.length &gt;&gt; 16) &amp; 0xff) - (((flippedBytes.length &gt;&gt; 16) &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[37] = ((flippedBytes.length &gt;&gt; 24) &amp; 0xff) - (((flippedBytes.length &gt;&gt; 24) &amp; 0xff) &gt; 127 ? 256 : 0);
+    header[38] = 0x13; // Horizontal resolution (pixels/meter, arbitrary)
+    header[39] = 0x0B;
+    header[40] = 0x00;
+    header[41] = 0x00;
+    header[42] = 0x13; // Vertical resolution (pixels/meter, arbitrary)
+    header[43] = 0x0B;
+    header[44] = 0x00;
+    header[45] = 0x00;
+    header[46] = 0x00; // Colors in palette (0 = default)
+    header[47] = 0x00;
+    header[48] = 0x00; // Important colors (0 = all)
+    header[49] = 0x00;
+    header[50] = 0x00;
+    header[51] = 0x00;
+    header[52] = 0x00;
+    header[53] = 0x00;
+
+    // Combine header and pixel data
+    var bmpData = ogscript.createByteArray(fileSize);
+    for (var i = 0; i &lt; headerSize; i++) {
+        bmpData[i] = header[i];
+    }
+    for (var j = 0; j &lt; flippedBytes.length; j++) {
+        bmpData[headerSize + j] = flippedBytes[j];
+    }
+
+    // Save the BMP file
+    var success = ogscript.saveToFile(filePath, bmpData, true);
+    if (!success) {
+         ogscript.debug('Failed to save BMP image to ' + filePath);
+        return false;
+    }
+
+    return success;
+}
+
+function generateUUID() {
+    return getRandomSegment(22);
+}
+
+function getRandomSegment(length) {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    var result = "";
+    
+    // Use the current time as a seed
+    var now = new Date();
+    var seed = now.getFullYear() + now.getMonth() + now.getDate() +
+               now.getHours() + now.getMinutes() + now.getSeconds() + now.getMilliseconds();
+
+    for (var i = 0; i &lt; length; i++) {
+        seed = (seed * 37 + i) % chars.length; // Simple pseudo-randomization
+        result += chars.charAt(seed);
+    }
+
+    return result;
+}</api>
+      <api name="Satellite Listener">var socket = null;
+
+var g_clientThis = null;
+
+var g_deviceID = params.getValue('Companion.DeviceID', 0); //something unique per computer/instance
+
+if (g_deviceID === '') {
+   //make a UUID and assign it to the param for future use
+
+   g_deviceID = generateUUID();
+
+   ogscript.debug(g_deviceID);
+
+   params.setValue('Companion.DeviceID', 0, g_deviceID);
+}
+
+function setupSatellite()
+{
+   var ip = params.getValue('Companion.IP',0);
+   var port = params.getValue('Companion.Port',0);
+
+   ogscript.debug('Companion IP: ' + ip);
+   ogscript.debug('Companion Satellite Port: ' + port);
+
+   try 
+   { 
+      if(socket != null &amp;&amp; socket != undefined)
+      {
+         ogscript.debug("Satellite: Destroying old listener");
+         socket.destroyConnection();
+         socket = null;
+      }
+
+      socket = ogscript.createListener('companionSatellite', {'autostart':"true", 'delimitertype':"newline", 'connecthost':ip, 'connectport':port}, onSatelliteData);
+      
+      if(socket != null)
+      { 
+         ogscript.debug("Satellite: Connected: " + ip + ":" + port);         
+         return true;
+      }
+      else
+      {
+         ogscript.debug("Satellite: Error opening socket");
+         return false;
+      }
+   }
+   catch(err)
+   {
+      ogscript.debug("Satellite: Error opening socket:\n" + err);
+      return false;
+   }
+}
+
+function closeSatellite()
+{
+   if(socket != null &amp;&amp; socket != undefined)
+   {
+      try
+      {
+         socket.destroyConnection();
+      }
+      catch(e)
+      {
+         ogscript.debug("Companion Satellite Connection: Exception destroying connection: " + e);
+      }
+      
+      socket = null;
+      ogscript.debug("Companion Satellite Connection: Offline");
+   } 
+}
+
+function onSatelliteData(event)
+{
+   var i = 0;
+   if(event.isConnectEvent())
+   {
+      ogscript.debug("Satellite: Got a connect event from: " + event.getRemoteHost() + ":" + event.getRemotePort());
+      g_clientThis = this;
+   }
+
+   if(event.isMessageEvent())
+   {
+      var msg = event.getBytesAsString().trim();
+      parseSatelliteCommand(msg);
+      
+      g_clientThis = this;
+   }
+   
+   if(event.isDisconnectEvent())
+   {
+      ogscript.debug("Satellite: Got a disconnect event from: " + event.getRemoteHost() + ":" + event.getRemotePort());
+      g_clientThis = null;
+   }
+}
+
+function parseSatelliteCommand(data)
+{
+    try {
+                var params = data.split(' ');
+                var command = params[0];
+
+                if (command == 'BEGIN') {
+                    ogscript.debug('Satellite: Begin');
+                    for (var i = 1; i &lt; params.length; i++) {
+                        var prop_val = params[i].split('=');
+                        var property = prop_val[0];
+                        var value = prop_val[1];
+
+                        if (property.toUpperCase() === 'COMPANIONVERSION') {
+                           ogscript.debug('Companion Version:', value);
+                        }
+
+                        if (property.toUpperCase() === 'APIVERSION') {
+                            ogscript.debug('API Version:', value);
+                        }
+                    }
+
+                    addDevice();
+                }
+
+                if (command == 'ADD-DEVICE') {
+                     ogscript.debug('Satellite: Add-Device');
+                    if (params[1] == 'OK') {
+                        startPing();
+                    }
+                }
+
+                if (command == 'KEY-STATE') {
+                    var keyObj = {
+                     deviceId: "",
+                     keyNumber: 0,
+                     keyType: "",
+                     bitmap: "",
+                     color: "",
+                     textColor: "",
+                     text: "",
+                     fontSize: ""
+                    };
+
+                    for (var i = 1; i &lt; params.length; i++) {
+                        var prop_val = params[i].split('=');
+                        var property = prop_val[0];
+                        var value = prop_val[1];
+
+                        if (property == "DEVICEID") {
+                           keyObj.deviceId = "" + value;
+                        }
+                        else if (property == "KEY") {
+                           keyObj.keyNumber = parseInt(value, 10);
+                        }
+                        else if (property == "TYPE") {
+                           keyObj.keyType = "" + value;
+                        }
+                        else if (property == "BITMAP") {
+                           keyObj.bitmap = "" + value;
+                        }
+                        else if (property == "COLOR") {
+                           keyObj.color = "" + value;
+                        }
+                        else if (property == "TEXT_COLOR") {
+                           keyObj.textColor = "" + value;
+                        }
+                        else if (property == "TEXT") {
+                           var textValue = base64ToAscii(value);
+                           keyObj.text = "" + textValue;
+                        }
+                        else if (property == "FONT_SIZE") {
+                           keyObj.fontSize = "" + value;
+                        }
+                    }
+
+                    updateKey(keyObj);
+                }
+
+                if (command == 'KEYS-CLEAR') {
+                    // Handle KEYS-CLEAR logic
+                    clearKeys();
+                }
+
+                if (command == 'BRIGHTNESS') {
+                    // Handle BRIGHTNESS logic
+                    for (var i = 1; i &lt; params.length; i++) {
+                        var prop_val = params[i].split('=');
+                        var property = prop_val[0];
+                        var value = prop_val[1];
+
+                        if (property === 'VALUE') {
+                           setBrightness(parseInt(value, 10));
+                        }
+                    }
+                }
+        } catch (error) {
+            ogscript.debug('Error: ' + error);
+        }
+}
+
+function addDevice() {
+   ogscript.debug('Adding Satellite Surface:');
+   var addDeviceCmd = "ADD-DEVICE DEVICEID=" + g_deviceID + " PRODUCT_NAME=RossDashboard";
+
+   ogscript.debug(addDeviceCmd);
+
+   var keysTotal = params.getValue("Companion.KeysTotal", 0);
+   var keysPerRow = params.getValue("Companion.KeysPerRow", 0);
+
+   ogscript.debug('Keys Total: ' + keysTotal);
+   ogscript.debug('Keys Per Row: ' + keysPerRow);
+
+   addDeviceCmd += " KEYS_TOTAL=" + keysTotal;
+   addDeviceCmd += " KEYS_PER_ROW=" + keysPerRow;
+
+   var bitmapsVal = params.getValue('Companion.Bitmaps', 0);
+   var bitmapsSize = "false";
+   
+   if (bitmapsVal == 1)
+   {
+      bitmapsSize = params.getValue('Companion.ButtonSize', 0);
+      ogscript.debug('Bitmap Size: ' + bitmapsSize);
+   }
+   else {
+      ogscript.debug('Bitmaps Off. Text Only.');
+   }
+   
+   addDeviceCmd += " BITMAPS=" + bitmapsSize;
+   addDeviceCmd += " COLORS=true";
+   addDeviceCmd += " TEXT=true";
+   addDeviceCmd += " TEXT_STYLE=true";
+
+   sendCommand(addDeviceCmd);
+}
+
+function removeDevice() {
+   ogscript.debug('Removing Companion Satellite Surface.');
+   sendCommand("REMOVE-DEVICE DEVICEID=" + g_deviceID);
+}
+
+function startPing() {
+   ogscript.debug("Starting Satellite Ping: 2 Seconds");
+   
+   var pingTime = 2000; //2 seconds as recommended per the protocol
+
+   if(ogscript.getTimerManager().getTimer("pingTimer") !== null)
+   {
+      ogscript.getTimerManager().destroyTimer("pingTimer");
+   }
+
+   ogscript.installTimer('pingTimer', true, 0, pingTime, sendPing);
+}
+
+function sendPing() {
+   sendCommand("PING");
+}
+
+function stopPing() {
+   ogscript.debug("Stopping Ping.");
+   ogscript.getTimerManager().destroyTimer("pingTimer");
+}
+
+function sendKeyDown(keyNumber) {
+   sendCommand("KEY-PRESS DEVICEID=" + g_deviceID + " KEY=" + keyNumber + " PRESSED=true");
+}
+
+function sendKeyUp(keyNumber) {
+   sendCommand("KEY-PRESS DEVICEID=" + g_deviceID + " KEY=" + keyNumber + " PRESSED=false");
+}
+
+function updateKey(keyObj) {
+   var bitmapsVal = params.getValue('Companion.Bitmaps', 0);
+   var buttonKey = "btnKey" + keyObj.keyNumber;
+
+   if (bitmapsVal == 1) {
+      var uniqueFilename = "images/" + g_deviceID + "_key_" + keyObj.keyNumber + ".bmp";
+       try {
+          saveRGBAsBMP(
+              keyObj.bitmap, // Base64 string
+              uniqueFilename,          // Output file path
+              72,                   // Width
+              72                    // Height
+          );
+      } catch (error) {
+          ogscript.debug("bmp error: " + error.message);
+      }
+      ogscript.setStyle(buttonKey, 'bg-u:' + uniqueFilename);
+      ogscript.rename(buttonKey, '');
+   }
+   else {
+      var newStyle = "";
+   
+      if (keyObj.color !== "") {
+         newStyle += "bg" + keyObj.color + ";";
+      }
+   
+      if (keyObj.textColor !== "") {
+         newStyle += "fg" + keyObj.textColor + ";";
+      }
+         
+
+      ogscript.setStyle(buttonKey,newStyle);
+   
+      if (keyObj.text !== "") {
+         ogscript.rename(buttonKey, keyObj.text);
+      }
+   }   
+}
+
+function clearKeys() {
+   //implement later
+}
+
+function setBrightness(brightness) {
+   //implement later
+}
+
+function sendCommand(cmd) {
+   try {
+      if(g_clientThis != null)
+      {
+         g_clientThis.writeString(cmd + "\n",false);
+      }
+      else {
+         //client is gone, let's not ping anymore
+         stopPing();
+      }
+   }
+   catch(error) {
+      ogscript.debug("Error sending command: " + error);
+   }
+}</api>
+   </meta>
+   <ogscript handles="onload" id="onloadPanel" name="onloadPanel">//ONLOAD FUNCTIONS</ogscript>
+   <abs height="398" id="surface" left="18" top="11" virtualheight="398" virtualwidth="1733" width="1733">
+      <abs height="261" id="keyGrid" left="14" rows="1" top="2" virtualheight="261" virtualwidth="1600" width="1600">
+         <api contentfunction="buildKeys">function buildKeys()
+      {
+         var keysTotal = params.getValue("Companion.KeysTotal", 0);
+         var keysPerRow = params.getValue("Companion.KeysPerRow", 0);
+
+         if (keysPerRow &gt; keysTotal) {
+            keysTotal = keysPerRow;
+         }
+
+         var rows = Math.ceil(keysTotal / keysPerRow);
+         if (rows &lt; 1) {
+            rows = 1;
+            }
+            
+         var cols = keysPerRow;
+
+         var width = params.getValue("Companion.ButtonSize", 0);
+         var height = params.getValue("Companion.ButtonSize", 0);
+         
+         var keyNumber = 0;
+         
+         var content = "";
+
+         var topNumber = 0;
+         var leftNumber = 0;
+         
+         
+      
+         for (var row = 0; row &lt; rows; row++)
+         {
+            for (var col = 0; col &lt; cols &amp;&amp; keyNumber &lt; keysTotal; col++)
+            {
+               content += "&lt;button top=\"" + topNumber + "\" left=\"" + leftNumber + "\" width=\"" + width + "\" height=\"" + height + "\" id=\"btnKey" + keyNumber + "\" name=\"" + row + "/" + col  + "\" buttontype=\"push\"/&gt;";
+               content += "&lt;ogscript handles=\"onmousedown\" targetid=\"btnKey" + keyNumber + "\"&gt;";
+                  content += "sendKeyDown(" + keyNumber + ")";
+               content += "&lt;/ogscript&gt;";
+               content += "&lt;ogscript handles=\"onmouseup\" targetid=\"btnKey" + keyNumber + "\"&gt;";
+                  content += "sendKeyUp(" + keyNumber + ")";
+               content += "&lt;/ogscript&gt;";
+               keyNumber++;
+
+               leftNumber += (params.getValue("Companion.ButtonSize", 0) + 3);
+            }
+
+            topNumber += (params.getValue("Companion.ButtonSize", 0) + 3);
+            leftNumber = 0;
+         }
+
+         content = "&lt;abs top=\"0\" left=\"15\" height=\"" + topNumber + "\"&gt;" + content + "&lt;/abs&gt;";
+
+         return content;
+      }</api>
+      </abs>
+   </abs>
+   <abs height="80" id="menu" left="1649" top="201" virtualheight="80" virtualwidth="100" width="100">
+      <button buttontype="push" height="41" id="saveSettings" left="4" name="Settings" top="0" width="100">
+         <task tasktype="ogscript">ogscript.reveal("settings");</task>
+      </button>
+   </abs>
+   <abs height="92" id="settings" left="76" style="txt-align:center;bg#333333;" top="23" virtualheight="92" virtualwidth="811" width="811">
+      <label height="25" left="0" name="Companion IP" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="125"/>
+      <param height="25" left="0" oid="Companion.IP" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="33" width="125"/>
+      <label height="25" left="133" name="Companion Port" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="117"/>
+      <param height="25" left="133" oid="Companion.Port" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="33" width="96"/>
+      <label height="25" left="259" name="Total Keys" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="83"/>
+      <param height="25" left="259" oid="Companion.KeysTotal" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="33" width="63"/>
+      <label height="25" left="350" name="Keys Per Row" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="96"/>
+      <param height="25" left="350" oid="Companion.KeysPerRow" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="33" width="96"/>
+      <label height="25" left="455" name="Use Bitmaps" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="96"/>
+      <param height="25" left="455" oid="Companion.Bitmaps" top="33" width="96"/>
+      <label height="25" left="559" name="Button Size" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="96"/>
+      <param height="25" left="559" oid="Companion.ButtonSize" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="33" width="96"/>
+      <button buttontype="push" height="63" id="saveSettings" left="688" name="Save" top="8" width="104">
+         <task tasktype="ogscript">ogscript.hide("settings");
+         ogscript.reload("keyGrid");
+         setupSatellite();</task>
+      </button>
+   </abs>
+</abs>

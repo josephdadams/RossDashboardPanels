@@ -15,3 +15,6 @@ Using the accompanying clock.html file, you can run some basic countdowns with t
 
 # Outlet Control.grid
 Use this panel to send a TCP message to turn on or off a network-based power outlet. Currently supports TP-Link HS100/101 models.
+
+# Companion Satellite UT.grid
+Use this panel to emulate a Companion Satellite Surface in Dashboard. It's sized for an UltriTouch (UT) but you can edit it to resize as needed.
