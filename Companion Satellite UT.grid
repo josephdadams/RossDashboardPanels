@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?><abs contexttype="opengear" gridaspect="true" gridheight="285" gridwidth="1920" keepalive="false" touch="true" virtualheight="261" virtualwidth="1759">
+<?xml version="1.0" encoding="UTF-8"?><abs contexttype="opengear" gridaspect="true" gridheight="285" gridwidth="1920" keepalive="false" touch="true" virtualheight="249" virtualwidth="1679">
    <meta>
       <params>
          <param access="1" maxlength="0" name="Companion.DeviceID" oid="Companion.DeviceID" type="STRING" value="5COZ9eAHTeEjFMYjJoKRdo" widget="text"/>
@@ -6,13 +6,56 @@
          <param access="1" constrainttype="INT_NULL" name="Companion Satellite Port" oid="Companion.Port" precision="0" type="INT16" value="16622" widget="default"/>
          <param access="1" constrainttype="INT_NULL" name="Companion Satellite Port" oid="Companion.KeysTotal" precision="0" type="INT16" value="40" widget="default"/>
          <param access="1" constrainttype="INT_NULL" name="Companion Satellite Port" oid="Companion.KeysPerRow" precision="0" type="INT16" value="20" widget="default"/>
-         <param access="1" constrainttype="INT_CHOICE" name="Companion.Bitmaps" oid="Companion.Bitmaps" precision="0" type="INT32" value="1" widget="checkbox">
+         <param access="1" constrainttype="INT_CHOICE" name="Companion.Bitmaps" oid="Companion.Bitmaps" precision="0" type="INT32" value="0" widget="checkbox">
             <constraint key="0">Off</constraint>
             <constraint key="1">On</constraint>
          </param>
          <param access="1" constrainttype="INT_NULL" name="Button Size" oid="Companion.ButtonSize" precision="0" type="INT16" value="72" widget="default"/>
       </params>
-      <api name="Functions">function base64ToAscii(base64String) {
+      <api name="Functions">function normalizeBase64(s) {
+         try {
+           if (s === undefined || s === null) return "";
+         
+           // Make sure it's a JS string (helps if something passes a non-string object)
+           s = String(s);
+         
+           // Trim whitespace
+           s = s.trim();
+         
+         // Remove wrapping quotes if present
+         var firstChar = s.substring(0, 1);
+         var lastChar = s.substring(s.length - 1, s.length);
+         
+         if (firstChar == '"' ) {
+           if (lastChar == '"') {
+             s = s.substring(1, s.length - 1);
+           }
+         } else {
+           if (firstChar == "'") {
+             if (lastChar == "'") {
+               s = s.substring(1, s.length - 1);
+             }
+           }
+         }
+         
+           // Remove any internal whitespace/newlines
+           s = s.replace(/\s+/g, "");
+         
+           // Support base64url variants if they show up
+           s = s.replace(/-/g, "+").replace(/_/g, "/");
+         
+           // Add padding if missing (optional but often helpful)
+           while (s.length % 4 !== 0) s += "=";
+         }
+         catch(e) {
+            ogscript.debug(e)
+         }
+
+      return s;
+}
+
+function base64ToAscii(base64String) {
+      base64String = normalizeBase64(base64String);
     var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
     var result = "";
     var buffer = 0;
@@ -22,7 +65,7 @@
       return result;
       }
 
-    for (var i = 0; i &lt; base64String.length(); i++) {
+    for (var i = 0; i &lt; base64String.length; i++) {
          var char = base64String.substring(i, i + 1);
 
         if (char == "=") {
@@ -31,7 +74,7 @@
         
         var value = chars.indexOf(char);
         if (value == -1) {
-         ogscript.debug("Invalid Base64 character");
+         ogscript.debug("Invalid Base64 character: " + char);
          return;
         }
 
@@ -308,110 +351,164 @@ function onSatelliteData(event)
    }
 }
 
-function parseSatelliteCommand(data)
-{
-    try {
-                var params = data.split(' ');
-                var command = params[0];
+function splitOnFirstEquals(token) {
+  var idx = token.indexOf('=');
+  if (idx == -1) return { property: token, value: "" };
+  return { property: token.substring(0, idx), value: token.substring(idx + 1) };
+}
 
-                if (command == 'BEGIN') {
-                    ogscript.debug('Satellite: Begin');
-                    for (var i = 1; i &lt; params.length; i++) {
-                        var prop_val = params[i].split('=');
-                        var property = prop_val[0];
-                        var value = prop_val[1];
+function splitBySpacesRespectQuotes(str) {
+  var parts = [];
+  var cur = "";
+  var inQuotes = false;
+  var quoteChar = "";
 
-                        if (property.toUpperCase() === 'COMPANIONVERSION') {
-                           ogscript.debug('Companion Version:', value);
-                        }
+  if (str == undefined) return parts;
 
-                        if (property.toUpperCase() === 'APIVERSION') {
-                            ogscript.debug('API Version:', value);
-                        }
-                    }
+  // force to string
+  str = "" + str;
 
-                    addDevice();
-                }
+  for (var i = 0; i &lt; str.length; i++) {
+    var ch = str.substring(i, i + 1);
 
-                if (command == 'ADD-DEVICE') {
-                     ogscript.debug('Satellite: Add-Device');
-                    if (params[1] == 'OK') {
-                        startPing();
-                    }
-                }
-
-                if (command == 'KEY-STATE') {
-                    var keyObj = {
-                     deviceId: "",
-                     keyNumber: 0,
-                     keyType: "",
-                     bitmap: "",
-                     color: "",
-                     textColor: "",
-                     text: "",
-                     fontSize: ""
-                    };
-
-                    for (var i = 1; i &lt; params.length; i++) {
-                        var prop_val = params[i].split('=');
-                        var property = prop_val[0];
-                        var value = prop_val[1];
-
-                        if (property == "DEVICEID") {
-                           keyObj.deviceId = "" + value;
-                        }
-                        else if (property == "KEY") {
-                           keyObj.keyNumber = parseInt(value, 10);
-                        }
-                        else if (property == "TYPE") {
-                           keyObj.keyType = "" + value;
-                        }
-                        else if (property == "BITMAP") {
-                           keyObj.bitmap = "" + value;
-                        }
-                        else if (property == "COLOR") {
-                           keyObj.color = "" + value;
-                        }
-                        else if (property == "TEXT_COLOR") {
-                           keyObj.textColor = "" + value;
-                        }
-                        else if (property == "TEXT") {
-                           var textValue = base64ToAscii(value);
-                           keyObj.text = "" + textValue;
-                        }
-                        else if (property == "FONT_SIZE") {
-                           keyObj.fontSize = "" + value;
-                        }
-                    }
-
-                    updateKey(keyObj);
-                }
-
-                if (command == 'KEYS-CLEAR') {
-                    // Handle KEYS-CLEAR logic
-                    clearKeys();
-                }
-
-                if (command == 'BRIGHTNESS') {
-                    // Handle BRIGHTNESS logic
-                    for (var i = 1; i &lt; params.length; i++) {
-                        var prop_val = params[i].split('=');
-                        var property = prop_val[0];
-                        var value = prop_val[1];
-
-                        if (property === 'VALUE') {
-                           setBrightness(parseInt(value, 10));
-                        }
-                    }
-                }
-        } catch (error) {
-            ogscript.debug('Error: ' + error);
+    if (inQuotes) {
+      cur += ch;
+      if (ch == quoteChar) {
+        inQuotes = false;
+        quoteChar = "";
+      }
+    } else {
+      // avoid || in OGScript
+      if (ch == '"') {
+        inQuotes = true;
+        quoteChar = '"';
+        cur += ch;
+      } else {
+        if (ch == "'") {
+          inQuotes = true;
+          quoteChar = "'";
+          cur += ch;
+        } else {
+          if (ch == " ") {
+            if (cur.length &gt; 0) {
+              parts.push(cur);
+              cur = "";
+            }
+          } else {
+            cur += ch;
+          }
         }
+      }
+    }
+  }
+
+  if (cur.length &gt; 0) {
+    parts.push(cur);
+  }
+   
+  return parts;
+}
+
+function stripWrappingQuotes(s) {
+  if (s == undefined) return "";
+  s = "" + s;
+
+  if (s.length &gt;= 2) {
+    var first = s.substring(0, 1);
+    var last = s.substring(s.length - 1, s.length);
+
+    if (first == '"') {
+       if (last == '"') {
+         return s.substring(1, s.length - 1);
+       }
+    }
+    
+    if (first == "'") {
+       if (last == "'") {
+         return s.substring(1, s.length - 1);
+       }
+    }
+  }
+  return s;
+}
+
+function parseSatelliteCommand(data) {
+  try {
+    // IMPORTANT: use quote-aware split
+    var params = splitBySpacesRespectQuotes(data);
+    var command = params[0];
+
+    if (command == 'BEGIN') {
+      ogscript.debug('Satellite: Begin');
+
+      for (var i = 1; i &lt; params.length; i++) {
+        var pv = splitOnFirstEquals(params[i]);
+        var property = pv.property;
+        var value = stripWrappingQuotes(pv.value);
+
+        if (property.toUpperCase() == 'COMPANIONVERSION') {
+          ogscript.debug('Companion Version: ' + value);
+        } else if (property.toUpperCase() == 'APIVERSION') {
+          ogscript.debug('API Version: ' + value);
+        }
+      }
+
+      addDevice();
+    } else if (command == 'ADD-DEVICE') {
+      ogscript.debug('Satellite: Add-Device');
+      if (params[1] == 'OK') {
+        startPing();
+      }
+    } else if (command == 'KEY-STATE') {
+      var keyObj = {
+        deviceId: "",
+        keyNumber: 0,
+        keyType: "",
+        bitmap: "",
+        color: "",
+        textColor: "",
+        text: "",
+        fontSize: ""
+      };
+
+      for (var i = 1; i &lt; params.length; i++) {
+        var pv = splitOnFirstEquals(params[i]);
+        var property = pv.property;
+        var value = stripWrappingQuotes(pv.value);
+
+        // ogscript.debug(params[i]);
+        // ogscript.debug(property + ' :' + value);
+
+        if (property == "DEVICEID") keyObj.deviceId = "" + value;
+        else if (property == "KEY") keyObj.keyNumber = parseInt(value, 10);
+        else if (property == "TYPE") keyObj.keyType = "" + value;
+        else if (property == "BITMAP") keyObj.bitmap = "" + value;
+        else if (property == "COLOR") keyObj.color = "" + value;
+        else if (property == "TEXT_COLOR") keyObj.textColor = "" + value;
+        else if (property == "TEXT") keyObj.text = "" + base64ToAscii(value);
+        else if (property == "FONT_SIZE") keyObj.fontSize = "" + value;
+      }
+
+      updateKey(keyObj);
+    } else if (command == 'KEYS-CLEAR') {
+      clearKeys();
+    } else if (command == 'BRIGHTNESS') {
+      for (var i = 1; i &lt; params.length; i++) {
+        var pv = splitOnFirstEquals(params[i]);
+        var property = pv.property;
+        var value = stripWrappingQuotes(pv.value);
+
+        if (property == 'VALUE') setBrightness(parseInt(value, 10));
+      }
+    }
+  } catch (error) {
+    ogscript.debug('Error: ' + error);
+  }
 }
 
 function addDevice() {
    ogscript.debug('Adding Satellite Surface:');
-   var addDeviceCmd = "ADD-DEVICE DEVICEID=" + g_deviceID + " PRODUCT_NAME=RossDashboard";
+   var addDeviceCmd = "ADD-DEVICE DEVICEID=" + g_deviceID + " PRODUCT_NAME=\"Ross Dashboard Panel\"";
 
    ogscript.debug(addDeviceCmd);
 
@@ -543,8 +640,8 @@ function sendCommand(cmd) {
 }</api>
    </meta>
    <ogscript handles="onload" id="onloadPanel" name="onloadPanel">//ONLOAD FUNCTIONS</ogscript>
-   <abs height="398" id="surface" left="18" top="11" virtualheight="398" virtualwidth="1733" width="1733">
-      <abs height="261" id="keyGrid" left="14" rows="1" top="2" virtualheight="261" virtualwidth="1600" width="1600">
+   <abs height="380" id="surface" left="17" top="10" virtualheight="380" virtualwidth="1654" width="1654">
+      <abs height="249" id="keyGrid" left="13" rows="1" top="2" virtualheight="249" virtualwidth="1527" width="1527">
          <api contentfunction="buildKeys">function buildKeys()
       {
          var keysTotal = params.getValue("Companion.KeysTotal", 0);
@@ -599,25 +696,25 @@ function sendCommand(cmd) {
       }</api>
       </abs>
    </abs>
-   <abs height="80" id="menu" left="1649" top="201" virtualheight="80" virtualwidth="100" width="100">
-      <button buttontype="push" height="41" id="saveSettings" left="4" name="Settings" top="0" width="100">
+   <abs height="76" id="menu" left="1574" top="192" virtualheight="76" virtualwidth="95" width="95">
+      <button buttontype="push" height="39" id="saveSettings" left="4" name="Settings" top="0" width="95">
          <task tasktype="ogscript">ogscript.reveal("settings");</task>
       </button>
    </abs>
-   <abs height="92" id="settings" left="76" style="txt-align:center;bg#333333;" top="23" virtualheight="92" virtualwidth="811" width="811">
-      <label height="25" left="0" name="Companion IP" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="125"/>
-      <param height="25" left="0" oid="Companion.IP" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="33" width="125"/>
-      <label height="25" left="133" name="Companion Port" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="117"/>
-      <param height="25" left="133" oid="Companion.Port" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="33" width="96"/>
-      <label height="25" left="259" name="Total Keys" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="83"/>
-      <param height="25" left="259" oid="Companion.KeysTotal" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="33" width="63"/>
-      <label height="25" left="350" name="Keys Per Row" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="96"/>
-      <param height="25" left="350" oid="Companion.KeysPerRow" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="33" width="96"/>
-      <label height="25" left="455" name="Use Bitmaps" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="96"/>
-      <param height="25" left="455" oid="Companion.Bitmaps" top="33" width="96"/>
-      <label height="25" left="559" name="Button Size" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="96"/>
-      <param height="25" left="559" oid="Companion.ButtonSize" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="33" width="96"/>
-      <button buttontype="push" height="63" id="saveSettings" left="688" name="Save" top="8" width="104">
+   <abs height="88" id="settings" left="73" style="txt-align:center;bg#333333;" top="22" virtualheight="88" virtualwidth="774" width="774">
+      <label height="24" left="0" name="Companion IP" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="119"/>
+      <param height="24" left="0" oid="Companion.IP" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="32" width="119"/>
+      <label height="24" left="127" name="Companion Port" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="112"/>
+      <param height="24" left="127" oid="Companion.Port" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="32" width="92"/>
+      <label height="24" left="247" name="Total Keys" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="79"/>
+      <param height="24" left="247" oid="Companion.KeysTotal" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="32" width="60"/>
+      <label height="24" left="334" name="Keys Per Row" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="92"/>
+      <param height="24" left="334" oid="Companion.KeysPerRow" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="32" width="92"/>
+      <label height="24" left="434" name="Use Bitmaps" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="92"/>
+      <param height="24" left="434" oid="Companion.Bitmaps" top="32" width="92"/>
+      <label height="24" left="533" name="Button Size" style="txt-align:center;font:bold;size:15;bg#111111" top="0" width="92"/>
+      <param height="24" left="533" oid="Companion.ButtonSize" showlabel="false" style="txt-align:center;font:bold;size:20;bg#333333;" top="32" width="92"/>
+      <button buttontype="push" height="60" id="saveSettings" left="657" name="Save" top="8" width="99">
          <task tasktype="ogscript">ogscript.hide("settings");
          ogscript.reload("keyGrid");
          setupSatellite();</task>
